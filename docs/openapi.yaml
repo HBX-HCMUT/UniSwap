@@ -1,0 +1,2817 @@
+openapi: 3.0.3
+info:
+  title: UniSwap • API chợ đồ cũ sinh viên
+  version: 0.1.0
+  description: Hợp đồng thiết kế. Các endpoint có x-access=admin yêu cầu phiên quản trị.
+servers:
+  - url: /api/v1
+paths:
+  /health:
+    get:
+      tags:
+        - system
+      summary: Kiểm tra sẵn sàng của API và DB
+      operationId: getHealth
+      security: []
+      x-access: public
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        "503":
+          $ref: '#/components/responses/Error503'
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: Đăng ký và gửi thư xác thực
+      operationId: postAuthRegister
+      security: []
+      x-access: public
+      description: Trả cùng phản hồi khi email đã tồn tại. Kiểm tra miền trường phía server.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+              additionalProperties: false
+              required:
+                - email
+                - password
+                - displayName
+      responses:
+        "202":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "429":
+          $ref: '#/components/responses/Error429'
+  /auth/verify:
+    post:
+      tags:
+        - auth
+      summary: Xác thực email bằng token dùng một lần
+      operationId: postAuthVerify
+      security: []
+      x-access: public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  minLength: 1
+              additionalProperties: false
+              required:
+                - token
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "410":
+          $ref: '#/components/responses/Error410'
+  /auth/resend:
+    post:
+      tags:
+        - auth
+      summary: Gửi lại thư xác thực
+      operationId: postAuthResend
+      security: []
+      x-access: public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              additionalProperties: false
+              required:
+                - email
+      responses:
+        "202":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "429":
+          $ref: '#/components/responses/Error429'
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: Đăng nhập và đặt cookie phiên
+      operationId: postAuthLogin
+      security: []
+      x-access: public
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  maxLength: 128
+              additionalProperties: false
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "429":
+          $ref: '#/components/responses/Error429'
+  /auth/google:
+    get:
+      tags:
+        - auth
+      summary: Bắt đầu đăng nhập Google
+      operationId: getAuthGoogle
+      security: []
+      x-access: public
+      responses:
+        "302":
+          description: Chuyển hướng trình duyệt
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Đích chuyển hướng
+  /auth/google/callback:
+    get:
+      tags:
+        - auth
+      summary: Kiểm tra OAuth và đặt cookie phiên
+      operationId: getAuthGoogleCallback
+      security: []
+      x-access: public
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Chuyển hướng trình duyệt
+          headers:
+            Location:
+              schema:
+                type: string
+              description: Đích chuyển hướng
+        "400":
+          $ref: '#/components/responses/Error400'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: Thu hồi phiên hiện tại và xóa cookie
+      operationId: postAuthLogout
+      security:
+        - sessionCookie: []
+      x-access: student
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ack'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /me:
+    get:
+      tags:
+        - users
+      summary: Xem hồ sơ riêng
+      operationId: getMe
+      security:
+        - sessionCookie: []
+      x-access: student
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+    patch:
+      tags:
+        - users
+      summary: Cập nhật hồ sơ của mình
+      operationId: patchMe
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                schoolId:
+                  type: string
+                  format: uuid
+                area:
+                  type: string
+                  minLength: 1
+                  maxLength: 120
+                contact:
+                  type: string
+                  minLength: 0
+                  maxLength: 200
+              additionalProperties: false
+              minProperties: 1
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /users/{id}:
+    get:
+      tags:
+        - users
+      summary: Xem uy tín người dùng công khai
+      operationId: getUsersId
+      security: []
+      x-access: public
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicProfile'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /users/{id}/reviews:
+    get:
+      tags:
+        - reviews
+      summary: Xem đánh giá đã nhận
+      operationId: getUsersIdReviews
+      security: []
+      x-access: public
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /schools:
+    get:
+      tags:
+        - catalog
+      summary: Danh sách trường
+      operationId: getSchools
+      security: []
+      x-access: public
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/School'
+  /categories:
+    get:
+      tags:
+        - catalog
+      summary: Danh sách danh mục đang dùng
+      operationId: getCategories
+      security: []
+      x-access: public
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /assets:
+    post:
+      tags:
+        - listings
+      summary: Tải một ảnh và nhận ID
+      operationId: postAssets
+      security:
+        - sessionCookie: []
+      x-access: student
+      description: Tối đa 5 MiB. Ảnh QR trả URL đọc có kiểm tra quyền. URL ảnh tin chỉ công khai khi tin được hiển thị.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                purpose:
+                  type: string
+                  enum:
+                    - LISTING
+                    - PAYMENT_QR
+              additionalProperties: false
+              required:
+                - file
+                - purpose
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "413":
+          $ref: '#/components/responses/Error413'
+        "415":
+          $ref: '#/components/responses/Error415'
+        "429":
+          $ref: '#/components/responses/Error429'
+  /assets/{id}:
+    get:
+      tags:
+        - listings
+      summary: Đọc ảnh theo quyền hiển thị
+      operationId: getAssetsId
+      security:
+        - {}
+        - sessionCookie: []
+      x-access: public
+      description: Khách chỉ đọc ảnh của tin công khai. Chủ ảnh xem được bản tải lên; admin được xem ảnh tin để duyệt. Chỉ chủ ảnh và người mua trong giao dịch đã chấp thuận hoặc hoàn tất được xem QR tương ứng.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 'Nội dung ảnh sau kiểm tra quyền; QR dùng Cache-Control: private, no-store.'
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: '#/components/responses/Error400'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /listings:
+    get:
+      tags:
+        - listings
+      summary: Tìm tin đang bán
+      operationId: getListings
+      security: []
+      x-access: public
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: schoolId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: sellerId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: area
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 120
+        - name: minPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 2000000000
+        - name: maxPrice
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 2000000000
+        - name: condition
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - LIKE_NEW
+              - GOOD
+              - FAIR
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - NEWEST
+              - PRICE_ASC
+              - PRICE_DESC
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Listing'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+    post:
+      tags:
+        - listings
+      summary: Đăng tin
+      operationId: postListings
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingInput'
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "422":
+          $ref: '#/components/responses/Error422'
+  /me/listings:
+    get:
+      tags:
+        - listings
+      summary: Danh sách tin của tôi, gồm cả tin ẩn và chờ duyệt
+      operationId: getMeListings
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Listing'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /listings/{id}:
+    get:
+      tags:
+        - listings
+      summary: Mở chi tiết tin
+      operationId: getListingsId
+      security:
+        - {}
+        - sessionCookie: []
+      x-access: public
+      description: Khách xem tin công khai. Nếu có phiên của chủ tin hoặc admin, có thể xem trạng thái riêng.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "404":
+          $ref: '#/components/responses/Error404'
+    put:
+      tags:
+        - listings
+      summary: Chủ tin sửa nội dung khi AVAILABLE
+      operationId: putListingsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingInput'
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+        "422":
+          $ref: '#/components/responses/Error422'
+  /listings/{id}/state:
+    patch:
+      tags:
+        - listings
+      summary: Chủ tin ẩn, hiện hoặc đánh dấu bán ngoài
+      operationId: patchListingsIdState
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - HIDE
+                    - SHOW
+                    - MARK_SOLD
+              additionalProperties: false
+              required:
+                - action
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /conversations:
+    post:
+      tags:
+        - chat
+      summary: Mở hoặc lấy lại hội thoại với người bán
+      operationId: postConversations
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+              required:
+                - listingId
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+    get:
+      tags:
+        - chat
+      summary: Hộp thư của tôi
+      operationId: getConversations
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conversation'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /conversations/{id}/messages:
+    get:
+      tags:
+        - chat
+      summary: Đọc tin nhắn của hội thoại
+      operationId: getConversationsIdMessages
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Message'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+    post:
+      tags:
+        - chat
+      summary: Gửi tin nhắn
+      operationId: postConversationsIdMessages
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+              additionalProperties: false
+              required:
+                - text
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "429":
+          $ref: '#/components/responses/Error429'
+  /reservations:
+    post:
+      tags:
+        - reservations
+      summary: Gửi giữ hoặc lấy lại yêu cầu đang chờ
+      operationId: postReservations
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: string
+                  format: uuid
+              additionalProperties: false
+              required:
+                - listingId
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+    get:
+      tags:
+        - reservations
+      summary: Các yêu cầu của tôi
+      operationId: getReservations
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - BUYER
+              - SELLER
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - PENDING
+              - ACCEPTED
+              - REJECTED
+              - CANCELLED
+              - COMPLETED
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Reservation'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /reservations/{id}:
+    get:
+      tags:
+        - reservations
+      summary: Xem yêu cầu và lịch hẹn
+      operationId: getReservationsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+    patch:
+      tags:
+        - reservations
+      summary: Chuyển trạng thái giữ hàng
+      operationId: patchReservationsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      description: ACCEPT/REJECT dành cho người bán. Người mua rút PENDING, hai bên hủy ACCEPTED. Chỉ người mua COMPLETE sau giao nhận. meetingAt phải ở tương lai lúc ACCEPT.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  properties:
+                    action:
+                      type: string
+                      enum:
+                        - ACCEPT
+                    finalPrice:
+                      type: integer
+                      minimum: 0
+                      maximum: 2000000000
+                    meetingAt:
+                      type: string
+                      format: date-time
+                    meetingPlace:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                    paymentMethod:
+                      type: string
+                      enum:
+                        - COD
+                  additionalProperties: false
+                  required:
+                    - action
+                    - finalPrice
+                    - meetingAt
+                    - meetingPlace
+                    - paymentMethod
+                - type: object
+                  properties:
+                    action:
+                      type: string
+                      enum:
+                        - ACCEPT
+                    finalPrice:
+                      type: integer
+                      minimum: 0
+                      maximum: 2000000000
+                    meetingAt:
+                      type: string
+                      format: date-time
+                    meetingPlace:
+                      type: string
+                      minLength: 1
+                      maxLength: 120
+                    paymentMethod:
+                      type: string
+                      enum:
+                        - QR_MANUAL
+                    qrAssetId:
+                      type: string
+                      format: uuid
+                  additionalProperties: false
+                  required:
+                    - action
+                    - finalPrice
+                    - meetingAt
+                    - meetingPlace
+                    - paymentMethod
+                    - qrAssetId
+                - type: object
+                  properties:
+                    action:
+                      type: string
+                      enum:
+                        - CANCEL
+                        - COMPLETE
+                        - REJECT
+                  additionalProperties: false
+                  required:
+                    - action
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+        "422":
+          $ref: '#/components/responses/Error422'
+  /reservations/{id}/reviews:
+    post:
+      tags:
+        - reviews
+      summary: Đánh giá đối tác sau hoàn tất
+      operationId: postReservationsIdReviews
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                comment:
+                  type: string
+                  minLength: 0
+                  maxLength: 1000
+              additionalProperties: false
+              required:
+                - rating
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /me/saved:
+    get:
+      tags:
+        - subscriptions
+      summary: Danh sách đã lưu và đang theo dõi
+      operationId: getMeSaved
+      security:
+        - sessionCookie: []
+      x-access: student
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Saved'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /me/favorites/{id}:
+    put:
+      tags:
+        - subscriptions
+      summary: Bật lưu tin
+      operationId: putMeFavoritesId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+    delete:
+      tags:
+        - subscriptions
+      summary: Bỏ lưu tin
+      operationId: deleteMeFavoritesId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /me/seller-follows/{id}:
+    put:
+      tags:
+        - subscriptions
+      summary: Bật theo dõi người bán
+      operationId: putMeSellerFollowsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+    delete:
+      tags:
+        - subscriptions
+      summary: Bỏ theo dõi người bán
+      operationId: deleteMeSellerFollowsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /me/category-follows/{id}:
+    put:
+      tags:
+        - subscriptions
+      summary: Bật theo dõi danh mục
+      operationId: putMeCategoryFollowsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+    delete:
+      tags:
+        - subscriptions
+      summary: Bỏ theo dõi danh mục
+      operationId: deleteMeCategoryFollowsId
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Thành công
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /notifications:
+    get:
+      tags:
+        - notifications
+      summary: Đọc thông báo của tôi
+      operationId: getNotifications
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: unread
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Notification'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /notifications/{id}/read:
+    put:
+      tags:
+        - notifications
+      summary: Đánh dấu đã đọc
+      operationId: putNotificationsIdRead
+      security:
+        - sessionCookie: []
+      x-access: student
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+  /reports:
+    post:
+      tags:
+        - moderation
+      summary: Báo cáo vi phạm tin
+      operationId: postReports
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                listingId:
+                  type: string
+                  format: uuid
+                reason:
+                  type: string
+                  enum:
+                    - SCAM
+                    - PROHIBITED
+                    - SPAM
+                    - OTHER
+                details:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              additionalProperties: false
+              required:
+                - listingId
+                - reason
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/reports:
+    get:
+      tags:
+        - moderation
+      summary: Xem hàng đợi báo cáo
+      operationId: getAdminReports
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - OPEN
+              - DISMISSED
+              - ACTIONED
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Report'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /admin/reports/{id}:
+    patch:
+      tags:
+        - moderation
+      summary: Đóng báo cáo hoặc gỡ tin và đóng báo cáo
+      operationId: patchAdminReportsId
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - DISMISS
+                    - REMOVE_LISTING
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              additionalProperties: false
+              required:
+                - action
+                - reason
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/listings:
+    get:
+      tags:
+        - moderation
+      summary: Tra cứu mọi tin và hàng chờ duyệt
+      operationId: getAdminListings
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: moderation
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - APPROVED
+              - PENDING
+              - REMOVED
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Listing'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /admin/listings/{id}:
+    patch:
+      tags:
+        - moderation
+      summary: Duyệt tin chờ hoặc gỡ tin
+      operationId: patchAdminListingsId
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                action:
+                  type: string
+                  enum:
+                    - APPROVE
+                    - REMOVE
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              additionalProperties: false
+              required:
+                - action
+                - reason
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/users:
+    get:
+      tags:
+        - admin
+      summary: Tra cứu tài khoản
+      operationId: getAdminUsers
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminUser'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                    maximum: 100
+                  total:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+                required:
+                  - items
+                  - page
+                  - pageSize
+                  - total
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+  /admin/users/{id}:
+    patch:
+      tags:
+        - admin
+      summary: Khóa hoặc mở khóa sinh viên
+      operationId: patchAdminUsersId
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - ACTIVE
+                    - LOCKED
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 500
+              additionalProperties: false
+              required:
+                - status
+                - reason
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/categories:
+    get:
+      tags:
+        - admin
+      summary: Xem mọi danh mục
+      operationId: getAdminCategories
+      security:
+        - sessionCookie: []
+      x-access: admin
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+    post:
+      tags:
+        - admin
+      summary: Tạo danh mục
+      operationId: postAdminCategories
+      security:
+        - sessionCookie: []
+      x-access: admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+              additionalProperties: false
+              required:
+                - name
+      responses:
+        "201":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/categories/{id}:
+    patch:
+      tags:
+        - admin
+      summary: Đổi tên hoặc bật tắt danh mục
+      operationId: patchAdminCategoriesId
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                active:
+                  type: boolean
+              additionalProperties: false
+              minProperties: 1
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "409":
+          $ref: '#/components/responses/Error409'
+  /admin/stats:
+    get:
+      tags:
+        - admin
+      summary: Đếm tin, giao dịch và sinh viên theo kỳ
+      operationId: getAdminStats
+      security:
+        - sessionCookie: []
+      x-access: admin
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: Thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stats'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: uniswap_session
+  schemas:
+    Ack:
+      type: object
+      properties:
+        ok:
+          type: boolean
+      additionalProperties: false
+      required:
+        - ok
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+      additionalProperties: false
+      required:
+        - code
+        - message
+    School:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        code:
+          type: string
+          minLength: 1
+          maxLength: 100
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - code
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        active:
+          type: boolean
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - active
+    PublicProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        schoolId:
+          type: string
+          format: uuid
+          nullable: true
+        averageRating:
+          type: number
+          nullable: true
+        reviewCount:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+      required:
+        - id
+        - displayName
+        - schoolId
+        - averageRating
+        - reviewCount
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        schoolId:
+          type: string
+          format: uuid
+          nullable: true
+        averageRating:
+          type: number
+          nullable: true
+        reviewCount:
+          type: integer
+          minimum: 0
+        email:
+          type: string
+          format: email
+        area:
+          type: string
+          minLength: 1
+          maxLength: 120
+        contact:
+          type: string
+          minLength: 0
+          maxLength: 200
+        role:
+          type: string
+          enum:
+            - STUDENT
+            - ADMIN
+      additionalProperties: false
+      required:
+        - id
+        - displayName
+        - schoolId
+        - averageRating
+        - reviewCount
+        - email
+        - role
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - LOCKED
+        role:
+          type: string
+          enum:
+            - STUDENT
+            - ADMIN
+      additionalProperties: false
+      required:
+        - id
+        - email
+        - displayName
+        - status
+        - role
+    Asset:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        purpose:
+          type: string
+          enum:
+            - LISTING
+            - PAYMENT_QR
+        url:
+          type: string
+          format: uri-reference
+      additionalProperties: false
+      required:
+        - id
+        - purpose
+        - url
+    ListingInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        price:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        condition:
+          type: string
+          enum:
+            - LIKE_NEW
+            - GOOD
+            - FAIR
+        categoryId:
+          type: string
+          format: uuid
+        schoolId:
+          type: string
+          format: uuid
+        area:
+          type: string
+          minLength: 1
+          maxLength: 120
+        imageIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          maxItems: 6
+          uniqueItems: true
+      additionalProperties: false
+      required:
+        - title
+        - description
+        - price
+        - condition
+        - categoryId
+        - schoolId
+        - area
+        - imageIds
+    Listing:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        price:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        condition:
+          type: string
+          enum:
+            - LIKE_NEW
+            - GOOD
+            - FAIR
+        categoryId:
+          type: string
+          format: uuid
+        schoolId:
+          type: string
+          format: uuid
+        area:
+          type: string
+          minLength: 1
+          maxLength: 120
+        id:
+          type: string
+          format: uuid
+        seller:
+          $ref: '#/components/schemas/PublicProfile'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Asset'
+          minItems: 1
+          maxItems: 6
+        state:
+          type: string
+          enum:
+            - AVAILABLE
+            - RESERVED
+            - SOLD
+            - HIDDEN
+        moderation:
+          type: string
+          enum:
+            - APPROVED
+            - PENDING
+            - REMOVED
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - title
+        - description
+        - price
+        - condition
+        - categoryId
+        - schoolId
+        - area
+        - id
+        - seller
+        - images
+        - state
+        - moderation
+        - createdAt
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        listingId:
+          type: string
+          format: uuid
+        buyerId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - listingId
+        - buyerId
+        - sellerId
+        - createdAt
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversationId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        text:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - conversationId
+        - senderId
+        - text
+        - createdAt
+    Reservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        listingId:
+          type: string
+          format: uuid
+        buyerId:
+          type: string
+          format: uuid
+        sellerId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+            - PENDING
+            - ACCEPTED
+            - REJECTED
+            - CANCELLED
+            - COMPLETED
+        createdAt:
+          type: string
+          format: date-time
+        finalPrice:
+          type: integer
+          minimum: 0
+          maximum: 2000000000
+        meetingAt:
+          type: string
+          format: date-time
+        meetingPlace:
+          type: string
+          minLength: 1
+          maxLength: 120
+        paymentMethod:
+          type: string
+          enum:
+            - COD
+            - QR_MANUAL
+        qrAsset:
+          $ref: '#/components/schemas/Asset'
+        completedAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - listingId
+        - buyerId
+        - sellerId
+        - state
+        - createdAt
+    Review:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reservationId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        targetId:
+          type: string
+          format: uuid
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comment:
+          type: string
+          minLength: 0
+          maxLength: 1000
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - reservationId
+        - authorId
+        - targetId
+        - rating
+        - createdAt
+    Notification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - MESSAGE
+            - RESERVATION
+            - NEW_LISTING
+            - MODERATION
+        resourceId:
+          type: string
+          format: uuid
+        text:
+          type: string
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - kind
+        - resourceId
+        - text
+        - readAt
+        - createdAt
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reporterId:
+          type: string
+          format: uuid
+        listingId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          enum:
+            - SCAM
+            - PROHIBITED
+            - SPAM
+            - OTHER
+        details:
+          type: string
+          minLength: 1
+          maxLength: 500
+        state:
+          type: string
+          enum:
+            - OPEN
+            - DISMISSED
+            - ACTIONED
+        createdAt:
+          type: string
+          format: date-time
+      additionalProperties: false
+      required:
+        - id
+        - reporterId
+        - listingId
+        - reason
+        - state
+        - createdAt
+    Stats:
+      type: object
+      properties:
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        listingCount:
+          type: integer
+          minimum: 0
+        completedCount:
+          type: integer
+          minimum: 0
+        activeStudentCount:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+      required:
+        - from
+        - to
+        - listingCount
+        - completedCount
+        - activeStudentCount
+    Saved:
+      type: object
+      properties:
+        listings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Listing'
+        sellers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicProfile'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+      additionalProperties: false
+      required:
+        - listings
+        - sellers
+        - categories
+  responses:
+    Error400:
+      description: Dữ liệu yêu cầu sai định dạng hoặc ngoài phạm vi
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error401:
+      description: Thiếu phiên hợp lệ hoặc sai thông tin đăng nhập
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error403:
+      description: Thiếu quyền, chưa xác thực hoặc tài khoản bị khóa
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error404:
+      description: Tài nguyên không tồn tại hoặc không hiển thị
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error409:
+      description: Xung đột trạng thái hoặc bản ghi trùng
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error410:
+      description: Token hết hạn hoặc đã dùng
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error413:
+      description: Ảnh vượt giới hạn
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error415:
+      description: Định dạng ảnh không hỗ trợ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error422:
+      description: Dữ liệu vi phạm quy tắc nghiệp vụ
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error429:
+      description: Thao tác quá thường xuyên
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Error503:
+      description: Dịch vụ chưa sẵn sàng
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
