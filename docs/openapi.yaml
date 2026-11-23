@@ -1054,6 +1054,11 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
+      description: >-
+        Người mua là sinh viên đã xác thực, ACTIVE, lấy từ phiên. Có thể gửi trước khi nhắn tin.
+        Chỉ nhận tin AVAILABLE, APPROVED của người bán ACTIVE. Tự giữ tin trả 403, tin ngoài
+        phạm vi hiển thị trả 404, tin công khai RESERVED/SOLD trả 409. Hai lần gửi cùng tin,
+        cùng người mua khi còn PENDING đều trả 200 với cùng id, kể cả khi gửi đồng thời.
       requestBody:
         required: true
         content:
@@ -1073,7 +1078,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Reservation'
+                allOf:
+                  - $ref: '#/components/schemas/Reservation'
+                  - properties:
+                      state: {type: string, enum: [PENDING]}
         "400":
           $ref: '#/components/responses/Error400'
         "401":
@@ -1092,7 +1100,17 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
+      description: >-
+        Chỉ lấy giao dịch mà chủ phiên là người mua hoặc người bán. Khi lọc theo hội thoại,
+        kiểm tra quyền thành viên trước rồi lọc theo cả listingId và buyerId của hội thoại.
+        Xếp PENDING/ACCEPTED trước lịch sử, rồi theo createdAt và id giảm dần trước khi phân trang.
       parameters:
+        - name: conversationId
+          in: query
+          description: Hội thoại của chủ phiên. Hội thoại chưa có yêu cầu giữ trả trang rỗng.
+          schema:
+            type: string
+            format: uuid
         - name: role
           in: query
           required: false
@@ -1161,6 +1179,8 @@ paths:
           $ref: '#/components/responses/Error401'
         "403":
           $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
   /reservations/{id}:
     get:
       tags:
@@ -1170,6 +1190,7 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
+      description: Chỉ người mua và chủ tin được đọc. Người ngoài nhận 404.
       parameters:
         - name: id
           in: path
@@ -1200,7 +1221,12 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
-      description: ACCEPT/REJECT dành cho người bán. Người mua rút PENDING, hai bên hủy ACCEPTED. Chỉ người mua COMPLETE sau giao nhận. meetingAt phải ở tương lai lúc ACCEPT.
+      description: >-
+        Với PENDING, người bán ACCEPT/REJECT và người mua CANCEL. Với ACCEPTED,
+        cả hai bên được CANCEL và chỉ người mua được COMPLETE sau giao nhận.
+        Người ngoài nhận 404, người tham gia dùng sai vai trò nhận 403, thao tác
+        trên yêu cầu đã đóng hoặc vừa mất lượt nhận 409. ACCEPT yêu cầu giờ hẹn
+        trong tương lai. QR_MANUAL yêu cầu ảnh PAYMENT_QR thuộc người bán.
       parameters:
         - name: id
           in: path
@@ -1313,6 +1339,7 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
+      description: Chỉ hai bên của giao dịch được đánh giá đối tác. Người ngoài nhận 404. Giao dịch chưa COMPLETED hoặc chủ phiên đã đánh giá nhận 409.
       parameters:
         - name: id
           in: path
@@ -2584,10 +2611,16 @@ components:
             - COD
             - QR_MANUAL
         qrAsset:
-          $ref: '#/components/schemas/Asset'
+          allOf:
+            - $ref: '#/components/schemas/Asset'
+            - properties:
+                purpose: {type: string, enum: [PAYMENT_QR]}
         completedAt:
           type: string
           format: date-time
+        viewerHasReviewed:
+          type: boolean
+          description: Trong giao dịch COMPLETED, cho biết chủ phiên đã đánh giá đối tác.
       additionalProperties: false
       required:
         - id
@@ -2596,6 +2629,44 @@ components:
         - sellerId
         - state
         - createdAt
+      oneOf:
+        - description: Chưa từng chốt lịch.
+          properties:
+            state: {type: string, enum: [PENDING, REJECTED, CANCELLED]}
+          not:
+            anyOf:
+              - required: [finalPrice]
+              - required: [meetingAt]
+              - required: [meetingPlace]
+              - required: [paymentMethod]
+              - required: [qrAsset]
+        - description: Lịch đã hủy giữ thông tin hẹn. Phản hồi bỏ ảnh QR.
+          properties:
+            state: {type: string, enum: [CANCELLED]}
+          required: [finalPrice, meetingAt, meetingPlace, paymentMethod]
+          not: {required: [qrAsset]}
+        - description: Hai bên xem được thông tin hẹn và ảnh của phương thức QR thủ công.
+          properties:
+            state: {type: string, enum: [ACCEPTED, COMPLETED]}
+          required: [finalPrice, meetingAt, meetingPlace, paymentMethod]
+          oneOf:
+            - properties:
+                paymentMethod: {type: string, enum: [COD]}
+              not: {required: [qrAsset]}
+            - properties:
+                paymentMethod: {type: string, enum: [QR_MANUAL]}
+              required: [qrAsset]
+      allOf:
+        - oneOf:
+            - properties:
+                state: {type: string, enum: [COMPLETED]}
+              required: [completedAt, viewerHasReviewed]
+            - not:
+                anyOf:
+                  - properties:
+                      state: {type: string, enum: [COMPLETED]}
+                  - required: [completedAt]
+                  - required: [viewerHasReviewed]
     Review:
       type: object
       properties:

@@ -13,7 +13,7 @@ Sinh viên đăng một món đồ cũ, người mua tìm theo trường hoặc 
 | Viết migration | [ERD và quy tắc dữ liệu](docs/du-lieu.md) |
 | Nối frontend với backend | [Quy ước và ví dụ HTTP](docs/api.md) · [OpenAPI](docs/openapi.yaml) |
 | Chuẩn bị buổi bảo vệ | [Kiểm thử và demo](docs/nghiem-thu.md) |
-| Bàn giao cho trợ lý lập trình | [Hướng dẫn làm việc](AGENT.md) |
+| Bàn giao cho trợ lý lập trình | [Hướng dẫn làm việc](AGENTS.md) |
 
 ## Cây nguồn
 

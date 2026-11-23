@@ -55,6 +55,7 @@ flowchart LR
   S[Người bán đăng giáo trình] --> F[Người mua tìm theo trường]
   F --> C[Nhắn tin thỏa thuận]
   C --> P[Yêu cầu giữ]
+  F -->|Giữ trực tiếp| P
   P --> A{Người bán chọn}
   A -->|Chấp thuận| H[Chốt giá và hẹn gặp]
   A -->|Từ chối| D[Kết thúc yêu cầu]
@@ -77,8 +78,8 @@ stateDiagram-v2
   CANCELLED --> [*]
 ```
 
-- Người mua gửi giữ từ trang tin còn bán, có thể chưa mở chat. Cùng người mua gửi lại khi còn PENDING nhận lại yêu cầu hiện có. Cho phép nhiều người hỏi giữ cùng một tin.
+- Sinh viên đã xác thực gửi giữ trên tin còn bán của người khác, kể cả trước khi mở chat. Cùng người mua gửi lại hoặc gửi đồng thời khi còn PENDING nhận lại cùng một yêu cầu. Hai người mua khác nhau có thể cùng chờ. Người mua rút yêu cầu đang chờ thành CANCELLED, người bán từ chối thành REJECTED.
 - Người bán chốt một yêu cầu trong transaction. Server khóa tin, kiểm tra quyền, tin còn AVAILABLE và đã duyệt, đổi tin sang RESERVED và từ chối các yêu cầu PENDING còn lại. Cạnh tranh mất lượt trả 409 để UI tải lại.
-- Hai bên xem giá chốt và lịch hẹn trong giao dịch. Muốn đổi lịch đã xác nhận, hai bên thống nhất qua chat, hủy và tạo yêu cầu mới. Người bán kiểm tra tiền mặt/chuyển khoản khi gặp. QR thủ công không phát sinh trạng thái “ngân hàng đã thanh toán”.
+- Hai bên xem giá chốt và lịch hẹn trong giao dịch. Muốn đổi lịch đã xác nhận, hai bên thống nhất qua chat, một bên hủy rồi người mua tạo yêu cầu mới. Lịch đã hủy giữ giá, giờ, địa điểm và phương thức thanh toán trong lịch sử. Trang giao dịch ngừng hiển thị ảnh QR của lịch đó. Người bán kiểm tra tiền mặt/chuyển khoản khi gặp. QR thủ công không phát sinh trạng thái “ngân hàng đã thanh toán”.
 - Người mua xác nhận nhận món một lần, hệ thống ghi COMPLETED và SOLD cùng transaction. Lịch sử và đánh giá có thể mở lại từ “Giao dịch của tôi”. Bán ngoài hệ thống dùng “Đánh dấu đã bán”, không tạo giao dịch hay quyền đánh giá.
 - Chủ tin chỉ sửa/ẩn/đánh dấu bán khi AVAILABLE và chưa bị gỡ. Khi ẩn, bán ngoài hoặc sửa khiến tin quay về chờ duyệt, hủy yêu cầu đang chờ. Hủy hẹn thông thường mở lại AVAILABLE. Gỡ tin/khóa tài khoản còn áp dụng điều kiện hiển thị độc lập. Báo cáo đã xử lý và nhận xét đã tạo được giữ làm lịch sử.

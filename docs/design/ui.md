@@ -10,10 +10,23 @@
 | Hồ sơ · /users/[id], /me | Hồ sơ công khai có tên, trường, điểm, đánh giá, tin đang bán và theo dõi. Chủ tài khoản sửa trường, KTX, liên hệ qua /me | Chưa có đánh giá, bỏ theo dõi. Thông tin liên hệ riêng chỉ hiển thị ở /me |
 | Tin của tôi · /me/listings, /sell, /listings/[id]/edit | Form ảnh (chọn thứ tự), tên món, giá, tình trạng, danh mục, trường, khu vực, mô tả. Xem/sửa, ẩn/hiện, đánh dấu đã bán | Báo lỗi cạnh trường sai, xem trước ảnh, lỗi tải ảnh, chờ duyệt và đã gỡ kèm trạng thái |
 | Hộp thư · /inbox, /inbox/[id] | Chọn hội thoại theo tin, đọc tin cũ, gửi tin, mở giao dịch | Hội thoại trống, đang gửi, lỗi gửi cho phép giữ nội dung, huy hiệu tin mới |
-| Giao dịch · /me/reservations, /reservations/[id] | Lọc bằng vai trò mua/bán trên UI, xem đối tác, giá chốt, giờ và điểm hẹn, cách thanh toán. Người bán xác nhận/từ chối, hai bên hủy, người mua bấm đã nhận | Giờ hẹn quá khứ, người khác vừa giữ, hủy hẹn, đã hoàn tất. Form đánh giá mở cho từng bên chưa đánh giá |
+| Giao dịch · /me/reservations, /reservations/[id] | Lọc theo vai trò mua/bán, xem đối tác và lịch hẹn. Các nút theo bảng dưới đây | Giờ hẹn quá khứ, người khác vừa giữ, lịch đã hủy, đã hoàn tất |
 | Đã lưu và theo dõi · /me/saved | Danh sách tin đã lưu, người bán và danh mục đang theo dõi. Bật theo dõi danh mục từ bộ lọc ở chợ | Tin hết bán hiện trạng thái nếu còn công khai, tin bị gỡ ẩn khỏi danh sách |
 | Thông báo · /notifications | Tin nhắn, lịch hẹn, tin mới, kết quả kiểm duyệt. Bấm để đánh dấu đã đọc rồi mở tài nguyên | Rỗng, đã đọc, liên kết hết quyền xem |
 | Quản trị · /admin và /admin/{reports,listings,users,categories} | Bộ đếm theo kỳ, hàng chờ theo từ khóa, báo cáo có lý do, chi tiết tin, khóa/mở tài khoản, sửa danh mục | Yêu cầu lý do khi xử lý. Tải lại khi người khác đã xử lý, quyền admin kiểm ở API |
+
+## Thao tác trên từng yêu cầu giữ
+
+| Trạng thái | Người mua | Người bán |
+|---|---|---|
+| PENDING | Rút yêu cầu | Xác nhận giữ, Từ chối |
+| ACCEPTED | Đã nhận món, Hủy hẹn | Hủy hẹn |
+| COMPLETED | Đánh giá người bán | Đánh giá người mua |
+| REJECTED, CANCELLED | Xem lịch sử | Xem lịch sử |
+
+Sau phản hồi 409, tải lại yêu cầu và tin để cập nhật nhãn và nút. Khi mở lại giao dịch COMPLETED, dùng `viewerHasReviewed` của phiên hiện tại. Nếu đã đánh giá, hiển thị “Đã đánh giá” thay cho form.
+
+Từ hộp thư, “Mở giao dịch” gọi `GET /reservations?conversationId=…`. Nếu có yêu cầu PENDING hoặc ACCEPTED, mở yêu cầu đó. Nếu chỉ có yêu cầu đã đóng, mở danh sách lịch sử của hội thoại. Nếu danh sách rỗng, hiện “Chưa có yêu cầu giữ”. Người mua có thể giữ trực tiếp từ trang tin và mở “Nhắn người bán” sau đó.
 
 ## Wireframe ba màn hình của giao dịch
 

@@ -6,8 +6,8 @@ Mục tiêu của buổi demo là cho hai sinh viên dùng hai trình duyệt đ
 |---|---|---|
 | 0 · Bàn giao thiết kế (đợt này) | Đọc báo cáo, dựng cây nguồn, thống nhất cách gọi, viết use case, wireframe, ERD, API, ca nghiệm thu | Từng nhóm chức năng mục III có màn hình, endpoint và ca kiểm tra |
 | 1 · Đăng được một tin | Khởi tạo Next.js và NestJS, khóa phiên bản, Compose cho PostgreSQL + hộp thư SMTP local, migration User/Listing/Catalog, seed trường, danh mục. Làm phiên đăng nhập, xác thực email, đăng ảnh và trang chi tiết | Khách mở link xem tin, tài khoản chưa xác thực bị chặn đăng, chủ tin sửa được giá |
-| 2 · Mua được một món | Tìm/lọc, hội thoại + tin nhắn, giữ hàng, hẹn gặp, hoàn tất COD, đánh giá. Làm ràng buộc giao dịch trước khi nối nút xác nhận trên UI | Hai trình duyệt đi hết luồng demo. Hai người cùng giữ chỉ một người được người bán xác nhận |
-| 3 · Hoàn thiện mục III | Google OAuth, thông báo, yêu thích/theo dõi, công cụ kiểm duyệt, danh mục và thống kê. Thêm QR thủ công do người bán cung cấp để nghiệm thu cả hai cách thanh toán | Chạy hết bảng nghiệm thu, kiểm tra quyền chủ sở hữu, ghi nhận xử lý báo cáo |
+| 2 · Mua được một món | Tìm/lọc, hội thoại, giữ hàng, hẹn gặp, hoàn tất COD và đánh giá. Ghi thông báo giao dịch trong transaction chốt hẹn. Làm ràng buộc dữ liệu trước khi nối nút xác nhận trên UI | Minh và Lan đi hết bước 1–4 của demo COD. Dùng thêm phiên An để thấy người bán chỉ chấp thuận được một yêu cầu |
+| 3 · Hoàn thiện mục III | Google OAuth, giao diện thông báo, yêu thích/theo dõi, công cụ kiểm duyệt, danh mục và thống kê. Thêm QR thủ công do người bán cung cấp | Chạy hết bảng nghiệm thu, kể cả QR. Tại bước 5 của demo, admin xử lý báo cáo OPEN trên một tin mẫu khác rồi kiểm tra thống kê |
 | 4 · Chạy thử trước buổi bảo vệ | Seed lại DB thử nghiệm, cấu hình ảnh/SMTP, Docker build, CI lint + typecheck + test + build, chạy thử từ máy khác | Mở được trang chi tiết trực tiếp qua URL, xem tốt trên điện thoại và hoàn thành demo sau khi tải lại trang |
 
 ## Chia việc theo sản phẩm bàn giao

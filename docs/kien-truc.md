@@ -36,8 +36,8 @@ sequenceDiagram
   participant D as PostgreSQL
   S->>W: Chọn yêu cầu và nhập lịch hẹn
   W->>A: PATCH /reservations/{id} (ACCEPT)
-  A->>D: Bắt đầu transaction và khóa hàng Listing
-  A->>D: Kiểm tra chủ tin, trạng thái và yêu cầu
+  A->>D: Bắt đầu transaction, khóa hai User theo id tăng dần rồi khóa Listing
+  A->>D: Đọc lại phiên, quyền chủ tin, trạng thái hai tài khoản, tin và yêu cầu
   alt Còn bán
     A->>D: Chấp thuận một yêu cầu, từ chối yêu cầu còn lại, giữ tin, ghi thông báo
     D-->>A: Commit

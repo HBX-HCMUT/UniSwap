@@ -64,6 +64,19 @@ Nếu yêu cầu vừa bị từ chối do người khác đã được giữ, c
 
 3. Sau giao nhận, người mua PATCH cùng tài nguyên với {"action":"COMPLETE"}. Hai bên lần lượt POST /reservations/{id}/reviews với {"rating":5,"comment":"Đúng mô tả, giao đúng hẹn."}. Server suy ra targetId từ đối tác và trả 201. Thử chấm lại trả 409.
 
+## Đọc lại giao dịch và lịch sử
+
+Chỉ người mua và chủ tin được đọc yêu cầu. Danh sách `GET /reservations` luôn giới hạn theo phiên. Từ hộp thư, truyền `conversationId` để lọc đúng cặp tin–người mua. Hội thoại ngoài quyền xem trả 404. Trang đầu xếp yêu cầu đang chờ hoặc đã nhận trước các yêu cầu đã đóng.
+
+| Trạng thái trả về | Dữ liệu ngoài ID, trạng thái và thời điểm tạo |
+|---|---|
+| PENDING, REJECTED hoặc rút trước khi được nhận | Bỏ các trường giá chốt, lịch hẹn và thanh toán |
+| ACCEPTED | Có finalPrice, meetingAt, meetingPlace, paymentMethod. Với QR_MANUAL, có thêm qrAsset chứa URL đọc theo quyền |
+| CANCELLED sau khi đã nhận giữ | Giữ bốn trường đã chốt để xem lịch sử. Bỏ qrAsset khỏi phản hồi của cả hai bên. Người mua hết quyền đọc ảnh dựa trên lịch này |
+| COMPLETED | Giữ dữ liệu như ACCEPTED, thêm completedAt và viewerHasReviewed. Server tính cờ từ Review của chủ phiên trên chính giao dịch này |
+
+Chủ tin tự gửi giữ nhận 403. Người mua gửi giữ một tin công khai RESERVED/SOLD nhận 409. Tin ẩn, chờ duyệt, đã gỡ hoặc thuộc người bán bị khóa trả 404 cho người ngoài. Với yêu cầu giữ riêng tư, kiểm tra phạm vi nhìn thấy trước khi kiểm tra vai trò và trạng thái.
+
 ## Các tình huống cần thống nhất khi ghép
 
 | Hành động | Quy tắc xử lý |
