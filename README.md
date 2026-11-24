@@ -47,7 +47,8 @@ Bộ nghiệm thu: lint, typecheck, build, 51 thao tác HTTP theo OpenAPI, luồ
 Backend đã có sẵn luồng OAuth (PKCE + nonce + xác minh ID token qua JWKS); chỉ cần cấu hình:
 
 1. Google Cloud Console → tạo OAuth client (Web application), thêm redirect URI
-   `http://127.0.0.1:3000/api/v1/auth/google/callback` (đúng cổng bạn chạy).
+   `http://127.0.0.1:3000/api/v1/auth/google/callback` (thay cổng 3000 bằng cổng thật
+   bạn chạy — mặc định lấy theo `APP_ORIGIN`).
 2. Ghi credentials vào môi trường:
    ```bash
    bash agent/google-oauth.sh <client-id> <client-secret>
