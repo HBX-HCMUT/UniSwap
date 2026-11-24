@@ -1,0 +1,48 @@
+name: AI review
+
+# Review tự động bằng DeepSeek (hoặc gateway tương thích OpenAI). Cần secret
+# DEEPSEEK_API_KEY (Settings → Secrets and variables → Actions). Có thể đổi endpoint/model
+# qua variables DEEPSEEK_BASE_URL / DEEPSEEK_MODEL. PR từ fork không nhận được secret nên
+# bước review tự bỏ qua, không làm đỏ PR.
+#
+# Lưu ý bảo mật: workflow chạy trên sự kiện pull_request nên checkout code của PR và chạy
+# scripts/ai-review.mjs với GITHUB_TOKEN (quyền write). Repo này là đồ án với cộng tác viên
+# tin cậy. Nếu repo mở cho người lạ, hãy chuyển sang pull_request_target và checkout base sha
+# để không thực thi code của PR.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Số pull request cần review
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number || inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Gọi DeepSeek và cập nhật comment review
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_BASE_URL: ${{ vars.DEEPSEEK_BASE_URL || 'https://api.deepseek.com' }}
+          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-chat' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number || inputs.pr }}
+        run: node scripts/ai-review.mjs

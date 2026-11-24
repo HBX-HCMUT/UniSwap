@@ -121,6 +121,16 @@ Cần Python 3 cho bước kiểm tra bằng chứng. Nếu Linux thiếu thư v
 
 Bản bàn giao đã đạt **20/20 ca nghiệm thu local**. Bộ kiểm thử gọi đủ 51 thao tác HTTP trong OpenAPI và kiểm tra cả luồng demo trên trình duyệt. [Tiêu chí nghiệm thu](docs/nghiem-thu.md) · [Workflow CI](.github/workflows/ci.yml)
 
+## AI review pull request (DeepSeek)
+
+Workflow [`.github/workflows/ai-review.yml`](.github/workflows/ai-review.yml) chạy khi PR mở/cập nhật và **cập nhật một comment review** (không spam mỗi lần push).
+
+1. Thêm secret `DEEPSEEK_API_KEY` (Settings → Secrets and variables → Actions).
+2. Tuỳ chọn: thêm variable `DEEPSEEK_MODEL` (mặc định `deepseek-chat`; dùng `deepseek-reasoner` nếu muốn suy luận sâu hơn).
+3. Chạy tay: Actions → "AI review" → Run workflow, nhập số PR.
+
+Review bỏ qua file khoá, ảnh và file sinh tự động, cắt diff trên 60.000 ký tự, tối đa 8 góp ý. Thiếu secret (PR từ fork) hoặc lỗi API **không làm đỏ PR**. Đây là gợi ý tự động, không thay review của người; `ci.yml` vẫn là gate bắt buộc.
+
 ## Cấu hình và phạm vi demo
 
 - Tham khảo [`.env.example`](.env.example) để bổ sung cấu hình vào `.agent-run/local.env`. Khi đổi `API_ORIGIN` cho bản đóng gói, cập nhật build arg trong [Compose](compose.yaml) rồi build lại web.
