@@ -1,34 +1,12 @@
 # Mô hình dữ liệu
 
-## ERD các quan hệ nghiệp vụ
+## ERD theo ký pháp Chen
 
-```mermaid
-erDiagram
-  SCHOOL ||--o{ USER : enrolls
-  SCHOOL ||--o{ LISTING : locates
-  USER ||--o{ LISTING : sells
-  CATEGORY ||--o{ LISTING : groups
-  LISTING o|--o{ ASSET : illustrates
-  USER ||--o{ ASSET : uploads
-  LISTING ||--o{ CONVERSATION : concerns
-  USER ||--o{ CONVERSATION : asks
-  CONVERSATION ||--o{ MESSAGE : contains
-  USER ||--o{ MESSAGE : sends
-  USER ||--o{ RESERVATION : requests
-  LISTING ||--o{ RESERVATION : receives
-  RESERVATION ||--o{ REVIEW : allows
-  USER ||--o{ REVIEW : writes
-  USER ||--o{ REVIEW : receives
-  USER ||--o{ FAVORITE : saves
-  LISTING ||--o{ FAVORITE : saved
-  USER ||--o{ SELLER_FOLLOW : follows
-  USER ||--o{ SELLER_FOLLOW : followed
-  USER ||--o{ CATEGORY_FOLLOW : subscribes
-  CATEGORY ||--o{ CATEGORY_FOLLOW : followed
-  USER ||--o{ NOTIFICATION : receives
-  LISTING ||--o{ REPORT : flagged
-  USER ||--o{ REPORT : reports
-```
+Hình chữ nhật là thực thể, hình thoi là quan hệ, hình oval là thuộc tính. Khóa chính được gạch dưới. Ký hiệu 1, M và N ghi cạnh thực thể biểu thị lực lượng tối đa của quan hệ. Ví dụ, một sinh viên đăng nhiều tin và mỗi tin có một người bán. Các thuộc tính tiêu biểu nằm cạnh thực thể; từ điển bên dưới liệt kê đầy đủ các trường. Ba quan hệ M–N “Lưu tin”, “Theo dõi người bán” và “Theo dõi danh mục” tương ứng với các bảng Favorite, SellerFollow và CategoryFollow.
+
+![ERD Chen tổng thể của chợ đồ cũ UniSwap](design/erd-uniswap.svg)
+
+[Mở ERD tổng thể để phóng to](design/erd-uniswap.svg) · [Chỉnh sửa nguồn Graphviz](design/erd-uniswap.dot)
 
 ## Từ điển cho người viết migration
 
