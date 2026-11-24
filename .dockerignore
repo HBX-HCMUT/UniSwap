@@ -1,0 +1,9 @@
+.git
+.agent-run
+**/.env*
+**/node_modules
+**/.next
+**/dist
+**/uploads
+**/*.tsbuildinfo
+docs/*.docx

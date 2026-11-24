@@ -1,0 +1,30 @@
+# Dùng các dịch vụ PostgreSQL và SMTP đã cấp bởi agent/env.sh up trên Linux.
+name: uniswap-app
+x-app: &app
+  image: uniswap-local:1
+  build:
+    context: .
+    args:
+      API_ORIGIN: http://127.0.0.1:3001
+  network_mode: host
+  env_file: .agent-run/local.env
+services:
+  api:
+    <<: *app
+    environment:
+      UPLOAD_DIR: /app/backend/uploads
+    volumes:
+      - images:/app/backend/uploads
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+  web:
+    <<: *app
+    command: ["npm", "run", "start", "-w", "frontend", "--", "--hostname", "127.0.0.1"]
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  images:

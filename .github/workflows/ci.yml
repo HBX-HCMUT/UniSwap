@@ -1,0 +1,43 @@
+name: Kiểm tra MVP
+on: [push, pull_request]
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: uniswap
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_DB: uniswap_test
+        ports: ["55433:5432"]
+        options: --health-cmd="pg_isready -U uniswap -d uniswap_test" --health-interval=3s --health-timeout=3s --health-retries=20
+      mail:
+        image: axllent/mailpit:v1.24
+        ports: ["51025:1025", "58025:8025"]
+    env:
+      TEST_DATABASE_URL: postgresql://uniswap:ci-local-only@127.0.0.1:55433/uniswap_test
+      DATABASE_URL: postgresql://uniswap:ci-local-only@127.0.0.1:55433/uniswap_test
+      SMTP_URL: smtp://127.0.0.1:51025
+      MAILPIT_API_URL: http://127.0.0.1:58025
+      ACCEPTANCE_EVIDENCE_DIR: ${{ github.workspace }}/.agent-run/evidence/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npx playwright install --with-deps chromium
+      - run: bash agent/acceptance.sh
+        env:
+          NODE_ENV: test
+      - run: python3 agent/check.py evidence "$ACCEPTANCE_EVIDENCE_DIR"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nghiem-thu
+          path: .agent-run/evidence/ci
+          include-hidden-files: true
