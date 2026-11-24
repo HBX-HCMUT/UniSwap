@@ -239,6 +239,7 @@ async function askDeepSeek(prompt) {
       temperature: 0,
       max_tokens: 8192,
       stream: false,
+      response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: 'Bạn là reviewer kỹ thuật. Trả lời HOÀN TOÀN bằng tiếng Việt. Chỉ trả về JSON hợp lệ, không markdown, không giải thích ngoài JSON.' },
         { role: 'user', content: prompt },
