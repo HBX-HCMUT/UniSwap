@@ -7,6 +7,11 @@ import { formData, href, value } from '../lib/query';
 import { useMutation } from './mutation';
 
 const oauthReturn = 'uniswap-oauth-return';
+const oauthMessages: Record<string, string> = {
+  error: 'Không thể đăng nhập bằng Google. Vui lòng thử lại hoặc dùng mật khẩu.',
+  forbidden: 'Email Google phải là email trường đã xác minh, hoặc tài khoản đang bị khóa.',
+  unavailable: 'Đăng nhập Google chưa được cấu hình trên máy chủ này.',
+};
 
 export function AuthForm({ mode, returnTo, oauth }: { mode: 'login' | 'register'; returnTo: string; oauth?: string }) {
   const { error, fields, pending, run } = useMutation();
@@ -32,7 +37,7 @@ export function AuthForm({ mode, returnTo, oauth }: { mode: 'login' | 'register'
       {!login && <Field name="displayName" label="Tên hiển thị" error={fields.displayName}><input id="displayName" name="displayName" autoComplete="nickname" required maxLength={100} aria-describedby={fields.displayName ? 'displayName-error' : undefined} /></Field>}
       <Field name="email" label="Email trường" error={fields.email}><input id="email" name="email" type="email" autoComplete="email" required aria-describedby={fields.email ? 'email-error' : undefined} /></Field>
       <Field name="password" label="Mật khẩu" error={fields.password}><input id="password" name="password" type="password" autoComplete={login ? 'current-password' : 'new-password'} minLength={login ? undefined : 8} maxLength={128} required aria-describedby={fields.password ? 'password-error' : undefined} /></Field>
-      <Notice error text={error || (oauth === 'error' ? 'Không thể đăng nhập bằng Google. Vui lòng thử lại với email trường.' : '')} />
+      <Notice error text={error || (oauth ? oauthMessages[oauth] || '' : '')} />
       <button type="submit" disabled={pending}>{pending ? 'Đang xử lý…' : login ? 'Đăng nhập' : 'Đăng ký'}</button>
     </form>
     <a className="button secondary" href="/api/v1/auth/google" onClick={() => sessionStorage.setItem(oauthReturn, returnTo)}>Tiếp tục với Google</a>

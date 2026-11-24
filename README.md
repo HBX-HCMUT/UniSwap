@@ -42,6 +42,20 @@ bash agent/acceptance.sh && python3 agent/check.py evidence "$ACCEPTANCE_EVIDENC
 
 Bộ nghiệm thu: lint, typecheck, build, 51 thao tác HTTP theo OpenAPI, luồng trình duyệt Chromium, seed idempotent. Đạt **20/20 ca**. Cần Python 3; thiếu thư viện Chromium thì `npx playwright install --with-deps chromium`.
 
+## Đăng nhập Google
+
+Backend đã có sẵn luồng OAuth (PKCE + nonce + xác minh ID token qua JWKS); chỉ cần cấu hình:
+
+1. Google Cloud Console → tạo OAuth client (Web application), thêm redirect URI
+   `http://127.0.0.1:3000/api/v1/auth/google/callback` (đúng cổng bạn chạy).
+2. Ghi credentials vào môi trường:
+   ```bash
+   bash agent/google-oauth.sh <client-id> <client-secret>
+   ```
+3. Khởi động lại API, rồi bấm **Tiếp tục với Google** ở trang đăng nhập.
+
+Chỉ email thuộc `STUDENT_EMAIL_DOMAINS` và đã xác minh bên Google mới đăng nhập được. Chưa cấu hình thì nút Google đưa về trang đăng nhập kèm thông báo, API vẫn trả `503` đúng hợp đồng OpenAPI.
+
 ## AI review pull request
 
 Workflow [`.github/workflows/ai-review.yml`](.github/workflows/ai-review.yml) gọi DeepSeek khi PR mở/cập nhật và cập nhật một comment review (tiếng Việt theo template báo cáo). Cần secret `DEEPSEEK_API_KEY`; tuỳ chọn variable `DEEPSEEK_MODEL` (mặc định `deepseek-chat`) và `DEEPSEEK_BASE_URL`. Thiếu secret không làm đỏ PR. `ci.yml` vẫn là gate bắt buộc.

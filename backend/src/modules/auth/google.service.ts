@@ -12,15 +12,24 @@ import { secret, appOrigin } from "../../common/settings";
 import { studentEmail } from "./account.service";
 
 const random = () => randomBytes(32).toString("base64url");
-function config() {
-  const clientId = process.env.GOOGLE_CLIENT_ID,
-    clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_CALLBACK_URL;
-  if (!clientId || !clientSecret || !redirectUri)
-    throw new ServiceUnavailableException(
-      "Đăng nhập Google chưa được cấu hình.",
-    );
+
+// Trình duyệt gửi Accept chứa text/html; client API thì không. Dùng để chọn giữa
+// chuyển hướng về trang đăng nhập (người dùng) và lỗi JSON (hợp đồng API).
+const wantsHtml = (req: Request) =>
+  (req.headers.accept || "").includes("text/html");
+const backToLogin = (res: Response, reason: string) =>
+  res.redirect(appOrigin + "/login?oauth=" + reason);
+
+// Mặc định redirect URI đi theo APP_ORIGIN để bản chạy ở cổng khác vẫn đúng.
+function credentials() {
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret) return null;
+  const redirectUri = (
+    process.env.GOOGLE_REDIRECT_URI ||
+    process.env.GOOGLE_CALLBACK_URL ||
+    appOrigin + "/api/v1/auth/google/callback"
+  ).trim();
   let issuer = "https://accounts.google.com";
   if (process.env.NODE_ENV === "test" && process.env.GOOGLE_OAUTH_ISSUER) {
     const fixture = new URL(process.env.GOOGLE_OAUTH_ISSUER);
@@ -44,8 +53,13 @@ async function discovery(issuer: string) {
   return metadata;
 }
 const tempCookie = "uniswap_google";
-export async function googleStart(res: Response) {
-  const { issuer, clientId, redirectUri } = config();
+export async function googleStart(req: Request, res: Response) {
+  const value = credentials();
+  if (!value) {
+    if (wantsHtml(req)) return backToLogin(res, "unavailable");
+    throw new ServiceUnavailableException("Đăng nhập Google chưa được cấu hình.");
+  }
+  const { issuer, clientId, redirectUri } = value;
   const meta = await discovery(issuer),
     state = random(),
     nonce = random(),
@@ -77,7 +91,27 @@ export async function googleFinish(
   code: string,
   state: string,
 ) {
-  const { issuer, clientId, clientSecret, redirectUri } = config();
+  const value = credentials();
+  if (!value) {
+    if (wantsHtml(req)) return backToLogin(res, "unavailable");
+    throw new ServiceUnavailableException("Đăng nhập Google chưa được cấu hình.");
+  }
+  try {
+    await finish(req, res, value, code, state);
+  } catch (error) {
+    // Người dùng từ chối ở màn hình đồng ý của Google hoặc sai miền email:
+    // đưa họ về trang đăng nhập thay vì hiện trang lỗi JSON.
+    if (!wantsHtml(req)) throw error;
+    backToLogin(res, error instanceof ForbiddenException ? "forbidden" : "error");
+  }
+}
+async function finish(
+  req: Request,
+  res: Response,
+  { issuer, clientId, clientSecret, redirectUri }: NonNullable<ReturnType<typeof credentials>>,
+  code: string,
+  state: string,
+) {
   const signed = cookie(req, tempCookie);
   res.clearCookie(tempCookie, cookieOptions);
   let context;
