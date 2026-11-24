@@ -14,6 +14,7 @@
 // Nguyên tắc: review không được chặn merge. Thiếu secret (PR từ fork) thì bỏ qua,
 // lỗi API thì thoát 0 nhưng in lỗi rõ trong log Actions.
 
+import { pathToFileURL } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 
@@ -21,7 +22,7 @@ const MARKER = '<!-- ai-review:deepseek -->';
 const MAX_DIFF_CHARS = 60_000;
 const MAX_FINDINGS = 8;
 const IGNORED = [
-  /^package-lock\.json$/,
+  /(^|\/)package-lock\.json$/,
   /^frontend\/AGENTS\.md$/,
   /\.(png|jpe?g|webp|gif|ico|svg|woff2?|pdf|docx|xlsx|zip)$/i,
 ];
@@ -126,7 +127,7 @@ async function askDeepSeek(prompt) {
     body: JSON.stringify({
       model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
       temperature: 0.2,
-      max_tokens: 2000,
+      max_tokens: 4096,
       stream: false,
       messages: [
         { role: 'system', content: 'Bạn là reviewer kỹ thuật khó tính nhưng công bằng, trả lời bằng tiếng Việt.' },
@@ -137,15 +138,26 @@ async function askDeepSeek(prompt) {
   const raw = await response.text();
   if (!response.ok) throw new Error(`DeepSeek HTTP ${response.status}: ${raw.slice(0, 500)}`);
   const data = JSON.parse(raw);
-  const content = data?.choices?.[0]?.message?.content?.trim();
+  const message = data?.choices?.[0]?.message || {};
+  const content = (message.content || '').trim() || (message.reasoning_content || '').trim();
   if (!content) throw new Error('DeepSeek trả về nội dung rỗng');
   return { content, usage: data.usage || {} };
 }
 
 async function upsertComment(repo, number, body) {
-  const list = await api(`/repos/${repo}/issues/${number}/comments?per_page=100`);
-  const comments = list.ok ? await list.json() : [];
-  const existing = comments.find((comment) => comment.body?.includes(MARKER));
+  const comments = [];
+  let page = 1;
+  while (true) {
+    const response = await api(`/repos/${repo}/issues/${number}/comments?per_page=100&page=${page}`);
+    if (!response.ok) break;
+    const batch = await response.json();
+    comments.push(...batch);
+    if (batch.length < 100) break;
+    page += 1;
+  }
+  // Chỉ nhận comment do bot tạo ra, tránh user khác đặt marker để bị ghi đè.
+  const existing = comments.find((comment) =>
+    comment.body?.includes(MARKER) && comment.user?.type === 'Bot');
   if (existing) {
     const response = await api(`/repos/${repo}/issues/comments/${existing.id}`, {
       method: 'PATCH',
@@ -218,7 +230,7 @@ async function main() {
   log('Xong.');
 }
 
-const invokedDirectly = process.argv[1] && import.meta.url.endsWith(process.argv[1].split('/').pop());
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (invokedDirectly) {
   main().catch((error) => {
     // Không chặn merge: log rõ rồi thoát 0 để workflow không đỏ vì lỗi hạ tầng review.
