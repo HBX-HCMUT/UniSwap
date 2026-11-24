@@ -32,7 +32,19 @@ function observe(page, method, path) {
   });
 }
 
+// HTML do server render trước, listener chỉ có sau khi React hydrate. Thao tác (bấm nút,
+// chọn file, gõ) khi chưa hydrate sẽ submit form native hoặc mất state, nên chờ React gắn
+// props vào DOM. Trang mở với javaScriptEnabled: false (ca KT12) không bao giờ hydrate.
+const noHydration = new Set();
+
+function waitHydrated(page) {
+  return page.waitForFunction(() => [...document.querySelectorAll('form,button,input,select,a')]
+    .some((element) => Object.keys(element).some((key) => key.startsWith('__reactProps$'))),
+  null, { timeout: 15000 });
+}
+
 async function mutate(page, method, path, action, status) {
+  await waitHydrated(page);
   const [response] = await Promise.all([observe(page, method, path), action()]);
   assert.equal(response.status(), status, method + ' ' + path);
   return response;
@@ -124,7 +136,9 @@ export async function browserCases(t, f, db, config, app, google) {
   const traces = new Set();
   const goto = async (page, path) => {
     usedPages.add(page);
-    return page.goto(app.webOrigin + path, { waitUntil: 'domcontentloaded' });
+    const response = await page.goto(app.webOrigin + path, { waitUntil: 'domcontentloaded' });
+    if (!noHydration.has(page)) await waitHydrated(page);
+    return response;
   };
   async function makePage(name, options) {
     const context = await browser.newContext({ locale: 'vi-VN', timezoneId: 'Asia/Ho_Chi_Minh', ...options });
@@ -132,6 +146,7 @@ export async function browserCases(t, f, db, config, app, google) {
     context.setDefaultNavigationTimeout(15000);
     await context.tracing.start({ screenshots: true, snapshots: true });
     const page = await context.newPage();
+    if (options?.javaScriptEnabled === false) noHydration.add(page);
     contexts.set(name, { context, page });
     return page;
   }
