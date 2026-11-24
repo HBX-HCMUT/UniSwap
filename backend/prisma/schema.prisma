@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum ListingCondition {
+  LIKE_NEW
+  GOOD
+  FAIR
+}
+
+enum ListingState {
+  AVAILABLE
+  RESERVED
+  SOLD
+  HIDDEN
+}
+
+enum ListingModeration {
+  APPROVED
+  PENDING
+  REMOVED
+}
+
+enum AssetPurpose {
+  LISTING
+  PAYMENT_QR
+}
+
+enum ReservationState {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentMethod {
+  COD
+  QR_MANUAL
+}
+
+enum NotificationKind {
+  MESSAGE
+  RESERVATION
+  NEW_LISTING
+  MODERATION
+}
+
+enum ReportReason {
+  SCAM
+  PROHIBITED
+  SPAM
+  OTHER
+}
+
+enum ReportState {
+  OPEN
+  DISMISSED
+  ACTIONED
+}
+
+enum ModerationTarget {
+  LISTING
+  USER
+  REPORT
+}
+
+enum ModerationAction {
+  APPROVE
+  REMOVE
+  LOCK
+  UNLOCK
+  DISMISS
+}
+
+model School {
+  id       String    @id @default(uuid()) @db.Uuid
+  name     String
+  code     String    @unique
+  users    User[]
+  listings Listing[]
+
+  @@map("schools")
+}
+
+model User {
+  id                 String              @id @default(uuid()) @db.Uuid
+  email              String              @unique
+  passwordHash       String?
+  googleSub          String?             @unique
+  displayName        String
+  schoolId           String?             @db.Uuid
+  school             School?             @relation(fields: [schoolId], references: [id])
+  area               String?
+  contact            String?
+  role               Role                @default(STUDENT)
+  status             UserStatus          @default(ACTIVE)
+  verifiedAt         DateTime?           @db.Timestamptz(3)
+  lastActiveAt       DateTime?           @db.Timestamptz(3)
+  createdAt          DateTime            @default(now()) @db.Timestamptz(3)
+  verificationTokens VerificationToken[]
+  sessions           Session[]
+  listings           Listing[]
+  assets             Asset[]
+  conversations      Conversation[]
+  messages           Message[]
+  reservations       Reservation[]
+  writtenReviews     Review[]            @relation("ReviewAuthor")
+  receivedReviews    Review[]            @relation("ReviewTarget")
+  favorites          Favorite[]
+  sellerFollows      SellerFollow[]      @relation("FollowingSeller")
+  followers          SellerFollow[]      @relation("FollowedSeller")
+  categoryFollows    CategoryFollow[]
+  notifications      Notification[]
+  reports            Report[]            @relation("ReportAuthor")
+  resolvedReports    Report[]            @relation("ReportResolver")
+  moderationLogs     ModerationLog[]
+
+  @@index([role, lastActiveAt])
+  @@map("users")
+}
+
+model VerificationToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id])
+  tokenHash String    @unique
+  expiresAt DateTime  @db.Timestamptz(3)
+  usedAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("verification_tokens")
+}
+
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id])
+  expiresAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, revokedAt])
+  @@map("sessions")
+}
+
+model Category {
+  id       String           @id @default(uuid()) @db.Uuid
+  name     String           @unique
+  active   Boolean          @default(true)
+  listings Listing[]
+  follows  CategoryFollow[]
+
+  @@map("categories")
+}
+
+model Listing {
+  id            String            @id @default(uuid()) @db.Uuid
+  sellerId      String            @db.Uuid
+  seller        User              @relation(fields: [sellerId], references: [id])
+  categoryId    String            @db.Uuid
+  category      Category          @relation(fields: [categoryId], references: [id])
+  schoolId      String            @db.Uuid
+  school        School            @relation(fields: [schoolId], references: [id])
+  area          String
+  title         String
+  description   String
+  price         Int
+  condition     ListingCondition
+  state         ListingState      @default(AVAILABLE)
+  moderation    ListingModeration @default(APPROVED)
+  publishedAt   DateTime?         @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @db.Timestamptz(3)
+  assets        Asset[]
+  conversations Conversation[]
+  reservations  Reservation[]
+  favorites     Favorite[]
+  reports       Report[]
+
+  @@index([moderation, state, schoolId, createdAt])
+  @@index([categoryId, price])
+  @@index([sellerId, createdAt])
+  @@map("listings")
+}
+
+model Asset {
+  id           String        @id @default(uuid()) @db.Uuid
+  ownerId      String        @db.Uuid
+  owner        User          @relation(fields: [ownerId], references: [id])
+  purpose      AssetPurpose
+  objectKey    String        @unique
+  mime         String
+  bytes        Int
+  listingId    String?       @db.Uuid
+  listing      Listing?      @relation(fields: [listingId], references: [id])
+  position     Int?
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  reservations Reservation[]
+
+  @@index([listingId, position])
+  @@index([ownerId])
+  @@map("assets")
+}
+
+model Conversation {
+  id        String    @id @default(uuid()) @db.Uuid
+  listingId String    @db.Uuid
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  buyerId   String    @db.Uuid
+  buyer     User      @relation(fields: [buyerId], references: [id])
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  messages  Message[]
+
+  @@unique([listingId, buyerId])
+  @@index([buyerId, createdAt])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String       @db.Uuid
+  sender         User         @relation(fields: [senderId], references: [id])
+  text           String
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([conversationId, createdAt, id])
+  @@index([senderId, createdAt])
+  @@map("messages")
+}
+
+model Reservation {
+  id            String           @id @default(uuid()) @db.Uuid
+  listingId     String           @db.Uuid
+  listing       Listing          @relation(fields: [listingId], references: [id])
+  buyerId       String           @db.Uuid
+  buyer         User             @relation(fields: [buyerId], references: [id])
+  state         ReservationState @default(PENDING)
+  finalPrice    Int?
+  meetingAt     DateTime?        @db.Timestamptz(3)
+  meetingPlace  String?
+  paymentMethod PaymentMethod?
+  qrAssetId     String?          @db.Uuid
+  qrAsset       Asset?           @relation(fields: [qrAssetId], references: [id])
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+  completedAt   DateTime?        @db.Timestamptz(3)
+  reviews       Review[]
+
+  @@index([buyerId, createdAt])
+  @@index([listingId, state])
+  @@index([state, completedAt])
+  @@index([qrAssetId, state])
+  @@map("reservations")
+}
+
+model Review {
+  id            String      @id @default(uuid()) @db.Uuid
+  reservationId String      @db.Uuid
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  authorId      String      @db.Uuid
+  author        User        @relation("ReviewAuthor", fields: [authorId], references: [id])
+  targetId      String      @db.Uuid
+  target        User        @relation("ReviewTarget", fields: [targetId], references: [id])
+  rating        Int
+  comment       String?
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@unique([reservationId, authorId])
+  @@index([targetId, createdAt])
+  @@map("reviews")
+}
+
+model Favorite {
+  userId    String  @db.Uuid
+  user      User    @relation(fields: [userId], references: [id])
+  listingId String  @db.Uuid
+  listing   Listing @relation(fields: [listingId], references: [id])
+
+  @@id([userId, listingId])
+  @@map("favorites")
+}
+
+model SellerFollow {
+  userId   String @db.Uuid
+  user     User   @relation("FollowingSeller", fields: [userId], references: [id])
+  sellerId String @db.Uuid
+  seller   User   @relation("FollowedSeller", fields: [sellerId], references: [id])
+
+  @@id([userId, sellerId])
+  @@index([sellerId])
+  @@map("seller_follows")
+}
+
+model CategoryFollow {
+  userId     String   @db.Uuid
+  user       User     @relation(fields: [userId], references: [id])
+  categoryId String   @db.Uuid
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  @@id([userId, categoryId])
+  @@index([categoryId])
+  @@map("category_follows")
+}
+
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  user       User             @relation(fields: [userId], references: [id])
+  kind       NotificationKind
+  resourceId String           @db.Uuid
+  eventKey   String
+  text       String
+  readAt     DateTime?        @db.Timestamptz(3)
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@unique([userId, eventKey])
+  @@index([userId, createdAt, id])
+  @@map("notifications")
+}
+
+model Report {
+  id             String       @id @default(uuid()) @db.Uuid
+  reporterId     String       @db.Uuid
+  reporter       User         @relation("ReportAuthor", fields: [reporterId], references: [id])
+  listingId      String       @db.Uuid
+  listing        Listing      @relation(fields: [listingId], references: [id])
+  reason         ReportReason
+  details        String?
+  state          ReportState  @default(OPEN)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  resolvedAt     DateTime?    @db.Timestamptz(3)
+  resolvedById   String?      @db.Uuid
+  resolvedBy     User?        @relation("ReportResolver", fields: [resolvedById], references: [id])
+  resolutionNote String?
+
+  @@index([state, createdAt])
+  @@index([listingId])
+  @@map("reports")
+}
+
+model ModerationLog {
+  id         String           @id @default(uuid()) @db.Uuid
+  adminId    String           @db.Uuid
+  admin      User             @relation(fields: [adminId], references: [id])
+  targetType ModerationTarget
+  targetId   String           @db.Uuid
+  action     ModerationAction
+  reason     String
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@index([targetType, targetId, createdAt])
+  @@map("moderation_logs")
+}

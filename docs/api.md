@@ -66,6 +66,8 @@ Nếu yêu cầu vừa bị từ chối do người khác đã được giữ, c
 
 ## Đọc lại giao dịch và lịch sử
 
+Nếu giữ trực tiếp trước khi nhắn, người mua vẫn có thể mở hội thoại đầu tiên từ lịch ACCEPTED trên tin RESERVED. Người mua khác mở hội thoại mới trên tin này nhận 409.
+
 Chỉ người mua và chủ tin được đọc yêu cầu. Danh sách `GET /reservations` luôn giới hạn theo phiên. Từ hộp thư, truyền `conversationId` để lọc đúng cặp tin–người mua. Hội thoại ngoài quyền xem trả 404. Trang đầu xếp yêu cầu đang chờ hoặc đã nhận trước các yêu cầu đã đóng.
 
 | Trạng thái trả về | Dữ liệu ngoài ID, trạng thái và thời điểm tạo |
@@ -81,7 +83,7 @@ Chủ tin tự gửi giữ nhận 403. Người mua gửi giữ một tin công 
 
 | Hành động | Quy tắc xử lý |
 |---|---|
-| Đăng hoặc sửa tin | Chấp nhận danh mục active và trường có thật. Quét từ khóa đã chuẩn hóa trong tiêu đề và mô tả. Khớp từ khóa chuyển PENDING để admin xem xét. Tin sạch APPROVED. Khi sửa tin đã gỡ trả 409 |
+| Đăng hoặc sửa tin | Sinh viên dùng danh mục đang hoạt động và trường có thật. Nếu ID đúng định dạng nhưng trường không tồn tại hoặc danh mục không khả dụng, trả 422. Quét từ khóa đã chuẩn hóa trong tiêu đề và mô tả. Khớp từ khóa chuyển PENDING để admin xem xét. Tin sạch APPROVED. Listing trả categoryName để vẫn đọc được danh mục trên tin cũ khi quản trị viên đã tắt danh mục. Khi sửa tin đã gỡ trả 409 |
 | Ẩn/hiện và bán ngoài | HIDE từ AVAILABLE sang HIDDEN. SHOW từ HIDDEN đã duyệt sang AVAILABLE. MARK_SOLD từ AVAILABLE sang SOLD. Thao tác không hợp lệ trả 409 |
 | QR thủ công | ACCEPT với QR_MANUAL bắt buộc qrAssetId thuộc người bán và purpose PAYMENT_QR. Người mua xem trong giao dịch. COD bỏ trường ảnh QR |
 | Theo dõi/lưu | PUT và DELETE trả 204 khi đạt trạng thái mong muốn, kể cả khi bấm lại. Mỗi người nhận tối đa một thông báo cho lần công khai đầu tiên của một tin |

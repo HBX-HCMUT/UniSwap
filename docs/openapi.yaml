@@ -194,6 +194,7 @@ paths:
       tags:
         - auth
       summary: Kiểm tra OAuth và đặt cookie phiên
+      description: Xác minh state, nonce và ID token. Cho phép các tham số bổ sung do Google trả về.
       operationId: getAuthGoogleCallback
       security: []
       x-access: public
@@ -841,6 +842,7 @@ paths:
         - chat
       summary: Mở hoặc lấy lại hội thoại với người bán
       operationId: postConversations
+      description: Người mua có thể mở hội thoại đầu tiên khi tin còn bán hoặc khi chính mình có lịch ACCEPTED trên tin RESERVED. Hội thoại đã có được dùng lại.
       security:
         - sessionCookie: []
       x-access: student
@@ -2468,6 +2470,11 @@ components:
         categoryId:
           type: string
           format: uuid
+        categoryName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Tên hiện tại của danh mục, kể cả khi đã ngừng dùng.
         schoolId:
           type: string
           format: uuid
@@ -2509,6 +2516,7 @@ components:
         - price
         - condition
         - categoryId
+        - categoryName
         - schoolId
         - area
         - id

@@ -7,3 +7,9 @@ coverage/
 !.env.example
 *.tsbuildinfo
 backend/uploads/
+
+# Trạng thái và thông tin xác thực của runner local
+/.agent-run/
+
+# Next.js sinh lại khai báo kiểu khi typecheck và build
+/frontend/next-env.d.ts
