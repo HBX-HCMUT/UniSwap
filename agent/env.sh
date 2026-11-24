@@ -2,6 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 umask 077
+. scripts/lib/portable.sh
 run=.agent-run
 compose() {
   docker compose --env-file "$run/local.env" -f agent/compose.yaml "$@"
@@ -22,10 +23,9 @@ case "${1:-check}" in
     docker info --format '{{.ServerVersion}}'
     ;;
   up)
-    require_commands docker curl openssl flock
+    require_commands docker curl openssl
     mkdir -p "$run"
-    exec 8>"$run/setup.lock"
-    flock 8
+    portable_lock "$run/setup.lock"
     if [[ ! -f "$run/local.env" ]]; then
       demo=$(openssl rand -hex 24)
       testpw=$(openssl rand -hex 24)

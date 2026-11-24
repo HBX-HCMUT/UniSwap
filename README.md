@@ -76,6 +76,18 @@ npm run dev
 
 Giữ terminal mở và truy cập [127.0.0.1:3000](http://127.0.0.1:3000). Frontend chuyển tiếp các request `/api/v1` tới NestJS. Thư xác thực và cookie phiên dùng `APP_ORIGIN`, vì vậy hãy mở đúng hostname đã cấu hình.
 
+### macOS và Windows (Git Bash)
+
+`agent/env.sh`, `scripts/dev.sh` và `agent/acceptance.sh` tự nhận môi trường qua [`scripts/lib/portable.sh`](scripts/lib/portable.sh):
+
+| Môi trường | Khoá file | Tắt cả cây tiến trình |
+|---|---|---|
+| Linux | `flock` (util-linux) | `setsid` + `kill -<pgid>` |
+| macOS | `python3` + `fcntl` trên fd thừa kế | `perl setpgrp` + `kill -<pgid>` |
+| Windows Git Bash | `mkdir` nguyên tử (có dọn khoá mồ côi theo pid) | `taskkill /T /F` |
+
+Nhờ vậy `bash agent/env.sh up` và `npm run dev` chạy trực tiếp trên macOS và trên Windows dùng **Git Bash** (không phải PowerShell/cmd), không cần util-linux hay WSL. Trên Windows cần Node.js, Git Bash và Docker Desktop; `python3` chỉ cần cho `agent/acceptance.sh`. Riêng bản Docker đóng gói ở [`compose.yaml`](compose.yaml) dùng `network_mode: host` nên vẫn cần Linux/WSL; trên macOS và Windows hãy chạy web và API bằng Node như mục này.
+
 ## Dừng và chạy lại
 
 | Muốn dừng | Thao tác |
