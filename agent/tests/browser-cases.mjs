@@ -130,7 +130,11 @@ async function change(page, item, label, expectedState, status = 200) {
 }
 
 export async function browserCases(t, f, db, config, app, google) {
-  const browser = await chromium.launch({ headless: true, timeout: 15000 });
+  const browser = await chromium.launch({
+    channel: process.env.ACCEPTANCE_BROWSER_CHANNEL || undefined,
+    headless: true,
+    timeout: 15000,
+  });
   const contexts = new Map();
   const usedPages = new Set();
   const traces = new Set();

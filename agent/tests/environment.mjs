@@ -5,11 +5,13 @@ import { createWriteStream } from 'node:fs';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { finished as streamFinished } from 'node:stream/promises';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const loopback = '127.0.0.1';
+const windows = process.platform === 'win32';
+const npmCli = process.env.npm_execpath || join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
 
 function checkedUrl(raw, label, protocols, ports, pathnames, allowCredentials = false) {
   let url;
@@ -111,10 +113,12 @@ export async function setup(config, issuer) {
     const logPath = join(evidence, logName);
     const log = createWriteStream(logPath, { flags: writtenLogs.has(logName) ? 'a' : 'w', mode: 0o600 });
     writtenLogs.add(logName);
-    const child = spawn(file, args, {
+    const child = spawn(windows && file === 'npm' ? process.execPath : file,
+      windows && file === 'npm' ? [npmCli, ...args] : args, {
       env: { ...env, ...overrides },
       stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true,
+      detached: !windows,
+      windowsHide: true,
     });
     children.add(child);
     child.stdout.pipe(log, { end: false });
@@ -142,6 +146,13 @@ export async function setup(config, issuer) {
 
   async function stop(child) {
     if (!children.has(child)) return;
+    if (windows) {
+      const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'],
+        { stdio: 'ignore', windowsHide: true });
+      const { code } = await waitForExit(killer);
+      await eventually(() => !children.has(child), 2500, `Tiến trình nghiệm thu chưa dừng (taskkill: ${code})`);
+      return;
+    }
     for (const signal of ['SIGTERM', 'SIGKILL']) {
       try {
         process.kill(-child.pid, signal);
