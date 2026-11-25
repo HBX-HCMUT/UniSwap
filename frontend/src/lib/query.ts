@@ -2,6 +2,12 @@ import type { FormEvent } from 'react';
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
+export const marketFilterKeys = ['categoryId', 'schoolId', 'sellerId', 'area', 'condition', 'minPrice', 'maxPrice'] as const;
+
+export function clearMarketFilters(query: SearchParams) {
+  return href('/', { q: getParam(query, 'q'), sort: getParam(query, 'sort') });
+}
+
 export function getParam(params: SearchParams, key: string): string {
   const value = params[key];
   return (Array.isArray(value) ? value[0] : value) ?? '';

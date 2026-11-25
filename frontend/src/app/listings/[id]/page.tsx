@@ -6,9 +6,10 @@ import { Icon } from '../../../components/icons';
 import { Gallery, ListingActions } from '../../../features/listings';
 import { money } from '../../../lib/format';
 import { conditionNames, type Listing, type Saved, type School } from '../../../lib/model';
+import { getParam, internalPath, type SearchParams } from '../../../lib/query';
 import { optionalGet, serverGet, sessionUser } from '../../../lib/server';
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
@@ -21,8 +22,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ListingPage({ params }: Props) {
-  const { id } = await params;
+export default async function ListingPage({ params, searchParams }: Props) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const returnTo = getParam(query, 'returnTo');
+  const backTo = returnTo.startsWith('/?') ? internalPath(returnTo) : '/';
   const listing = await optionalGet<Listing>(`/listings/${id}`);
   if (!listing) notFound();
   const user = await sessionUser();
@@ -33,7 +36,7 @@ export default async function ListingPage({ params }: Props) {
   const school = schools.find((item) => item.id === listing.schoolId)?.name;
   const sellerSchool = schools.find((item) => item.id === listing.seller.schoolId)?.name;
   return <>
-    <Back to="/">Về chợ</Back>
+    <Back to={backTo}>{backTo === '/' ? 'Về chợ' : 'Về kết quả'}</Back>
     <div className="columns">
       <Gallery listing={listing} />
       <article className="panel stack detail-info">

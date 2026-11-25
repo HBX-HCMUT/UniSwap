@@ -4,7 +4,7 @@
 
 | Trang / đường dẫn web | Nội dung, hành động chính | Trạng thái cần thiết kế |
 |---|---|---|
-| Chợ · / | Từ khóa, bộ lọc giá/danh mục/tình trạng/trường/KTX, sắp xếp mới/giá, thẻ ảnh–tên–giá–khu vực, phân trang | Đang tải, không tìm thấy + xóa lọc, nhập sai khoảng giá, mất kết nối + thử lại |
+| Chợ · / | Từ khóa, lọc nhanh theo danh mục, bộ lọc giá/danh mục/tình trạng/trường/KTX, sắp xếp mới/giá, thẻ ảnh–tên–giá–khu vực, phân trang | Đang tải, không tìm thấy + xóa lọc, nhập sai khoảng giá, mất kết nối + thử lại |
 | Tin · /listings/[id] | Bộ ảnh, giá VND, mô tả, tình trạng, địa điểm, thẻ người bán và điểm. Nhắn tin, giữ món, lưu, báo cáo | Chủ tin thấy quản lý. Đang giữ/đã bán hiện nhãn thay nút giữ. Tin bị gỡ hiện đường về chợ |
 | Tài khoản · /register, /login, /verify | Email trường, mật khẩu hoặc Google. Trang xác minh đọc token, yêu cầu người dùng bấm xác nhận rồi POST | Chờ thư, gửi lại, link hết hạn, sai miền, tài khoản bị khóa |
 | Hồ sơ · /users/[id], /me | Hồ sơ công khai có tên, trường, điểm, đánh giá, tin đang bán và theo dõi. Chủ tài khoản sửa trường, KTX, liên hệ qua /me | Chưa có đánh giá, bỏ theo dõi. Thông tin liên hệ riêng chỉ hiển thị ở /me |
@@ -14,6 +14,11 @@
 | Đã lưu và theo dõi · /me/saved | Danh sách tin đã lưu, người bán và danh mục đang theo dõi. Bật theo dõi danh mục từ bộ lọc ở chợ | Tin hết bán hiện trạng thái nếu còn công khai, tin bị gỡ ẩn khỏi danh sách |
 | Thông báo · /notifications | Tin nhắn, lịch hẹn, tin mới, kết quả kiểm duyệt. Bấm để đánh dấu đã đọc rồi mở tài nguyên | Rỗng, đã đọc, liên kết hết quyền xem |
 | Quản trị · /admin và /admin/{reports,listings,users,categories} | Bộ đếm theo kỳ, hàng chờ theo từ khóa, báo cáo có lý do, chi tiết tin, khóa/mở tài khoản, sửa danh mục | Yêu cầu lý do khi xử lý. Tải lại khi người khác đã xử lý, quyền admin kiểm ở API |
+
+## Luồng tìm món và xem chi tiết
+
+- **UC03.** Sau khi tìm hoặc lọc, trang thu gọn phần ảnh mở đầu để đưa kết quả lên sớm. Mỗi tiêu chí đang áp dụng có nút bỏ riêng. Bỏ bộ lọc giữ từ khóa và thứ tự sắp xếp, đồng thời đưa kết quả về trang đầu. Cách đặt bộ lọc cạnh kết quả trên desktop dựa trên [hướng dẫn tìm kiếm của eBay](https://www.ebay.com/help/buying/search-tips/use-search?id=4006). Cách kết hợp danh mục, từ khóa và sắp xếp tham khảo [luồng duyệt Carousell](https://blog.carousell.com/carousell-pro-tips/buying-guide/browse-carousell/) và [hướng dẫn lọc của Airbnb](https://www.airbnb.com/help/article/479).
+- **UC04.** Từ tin mở qua trang kết quả, liên kết “Về kết quả” khôi phục truy vấn, bộ lọc, thứ tự và số trang. Người mở tin bằng đường dẫn trực tiếp có liên kết “Về chợ”.
 
 ## Thao tác trên từng yêu cầu giữ
 

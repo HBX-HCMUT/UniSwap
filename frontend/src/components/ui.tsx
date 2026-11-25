@@ -41,16 +41,16 @@ export function AssetImage({ asset, alt, eager = false }: { asset?: Asset; alt: 
   return <img src={assetPath(asset)} alt={alt} loading={eager ? 'eager' : 'lazy'} />;
 }
 
-export function ListingCard({ listing }: { listing: Listing }) {
-  return <article className="listing-card"><Link href={`/listings/${listing.id}`}>
+export function ListingCard({ listing, returnTo }: { listing: Listing; returnTo?: string }) {
+  return <article className="listing-card"><Link href={href(`/listings/${listing.id}`, { returnTo })}>
     <div className="listing-image"><AssetImage asset={listing.images[0]} alt="" /><span className="image-badge"><ListingBadge listing={listing} /></span></div>
     <div className="listing-copy"><p className="card-condition">{conditionNames[listing.condition]}</p><h3>{listing.title}</h3><strong className="price">{money(listing.price)}</strong>
       <p className="location"><Icon name="pin" width={16} height={16} />{listing.area}</p></div>
   </Link></article>;
 }
 
-export function ListingGrid({ listings }: { listings: Listing[] }) {
-  return <div className="listing-grid">{listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}</div>;
+export function ListingGrid({ listings, returnTo }: { listings: Listing[]; returnTo?: string }) {
+  return <div className="listing-grid">{listings.map((listing) => <ListingCard key={listing.id} listing={listing} returnTo={returnTo} />)}</div>;
 }
 
 export function Pagination({ data, to, params = {} }: { data: Page<unknown>; to: string; params?: SearchParams }) {
