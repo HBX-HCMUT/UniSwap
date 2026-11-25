@@ -42,6 +42,8 @@ bash agent/acceptance.sh && python3 agent/check.py evidence "$ACCEPTANCE_EVIDENC
 
 Bộ nghiệm thu: lint, typecheck, build, 51 thao tác HTTP theo OpenAPI, luồng trình duyệt Chromium, seed idempotent. Đạt **20/20 ca**. Cần Python 3; thiếu thư viện Chromium thì `npx playwright install --with-deps chromium`.
 
+Trên Windows, sau khi nạp biến môi trường kiểm thử vào PowerShell, chạy `node agent/tests/acceptance.mjs`. Nếu Chromium đi kèm Playwright không khởi động, đặt `$env:ACCEPTANCE_BROWSER_CHANNEL = 'msedge'` để dùng Microsoft Edge đã cài. Nếu npm nằm ngoài thư mục cài Node.js, đặt `npm_execpath` trỏ tới tệp `npm-cli.js` của bản cài npm.
+
 ## AI review pull request
 
 Workflow [`.github/workflows/ai-review.yml`](.github/workflows/ai-review.yml) gọi DeepSeek khi PR mở/cập nhật và cập nhật một comment review (tiếng Việt theo template báo cáo). Cần secret `DEEPSEEK_API_KEY`; tuỳ chọn variable `DEEPSEEK_MODEL` (mặc định `deepseek-chat`) và `DEEPSEEK_BASE_URL`. Thiếu secret không làm đỏ PR. `ci.yml` vẫn là gate bắt buộc.

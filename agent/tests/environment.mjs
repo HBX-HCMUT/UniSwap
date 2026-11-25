@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
+import { createWriteStream, existsSync } from 'node:fs';
 import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -11,7 +11,6 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const loopback = '127.0.0.1';
 const windows = process.platform === 'win32';
-const npmCli = process.env.npm_execpath || join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js');
 
 function checkedUrl(raw, label, protocols, ports, pathnames, allowCredentials = false) {
   let url;
@@ -71,6 +70,13 @@ export async function eventually(fn, timeoutMs, message) {
 }
 
 export async function setup(config, issuer) {
+  const npmCli = windows && [
+    process.env.npm_execpath,
+    join(dirname(process.execPath), 'node_modules', 'npm', 'bin', 'npm-cli.js'),
+  ].find((candidate) => candidate && existsSync(candidate));
+  if (windows && !npmCli) {
+    throw new Error('Không tìm thấy npm-cli.js trên Windows. Đặt npm_execpath thành đường dẫn tới npm-cli.js của bản cài npm.');
+  }
   const evidence = resolve(process.env.ACCEPTANCE_EVIDENCE_DIR || '.agent-run/evidence/KT');
   await mkdir(evidence, { recursive: true });
   let apiPort = await temporaryPort();
@@ -126,9 +132,12 @@ export async function setup(config, issuer) {
     const flushed = streamFinished(log);
     void flushed.catch(() => {});
     const finished = waitForExit(child).finally(async () => {
-      children.delete(child);
       log.end();
-      await flushed;
+      try {
+        await flushed;
+      } finally {
+        children.delete(child);
+      }
     });
     // A server may fail before a readiness probe begins.
     void finished.catch(() => {});
@@ -148,9 +157,9 @@ export async function setup(config, issuer) {
     if (!children.has(child)) return;
     if (windows) {
       const killer = spawn('taskkill.exe', ['/PID', String(child.pid), '/T', '/F'],
-        { stdio: 'ignore', windowsHide: true });
-      const { code } = await waitForExit(killer);
-      await eventually(() => !children.has(child), 2500, `Tiến trình nghiệm thu chưa dừng (taskkill: ${code})`);
+        { stdio: 'ignore', windowsHide: true, timeout: 5000 });
+      const { code, signal } = await waitForExit(killer);
+      await eventually(() => !children.has(child), 2500, `Tiến trình nghiệm thu chưa dừng (taskkill: ${code ?? signal})`);
       return;
     }
     for (const signal of ['SIGTERM', 'SIGKILL']) {
