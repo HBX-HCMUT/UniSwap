@@ -22,6 +22,7 @@ const dateAtVietnam = (offsetHours = 0) => new Date(Date.now() + (7 + offsetHour
 const imageFile = { name: 'anh.png', mimeType: 'image/png', buffer: px };
 const reservationUrl = (item) => '/reservations/' + item.id;
 const listingUrl = (item) => '/listings/' + item.id;
+const marketCard = (page, item) => page.locator(`.listing-card a:is([href="${listingUrl(item)}"], [href^="${listingUrl(item)}?"])`);
 
 function observe(page, method, path) {
   return page.waitForResponse((response) => {
@@ -243,15 +244,22 @@ export async function browserCases(t, f, db, config, app, google) {
       await mutate(minh, 'PATCH', listingUrl(demoListing) + '/state', () => button(minh, 'Hiện lại tin').click(), 200);
       await expect(button(minh, 'Ẩn tin')).toBeVisible();
       await goto(guest, '/?q=' + encodeURIComponent(book));
-      await expect(guest.locator('a[href="' + listingUrl(demoListing) + '"]')).toBeVisible();
+      await expect(marketCard(guest, demoListing)).toBeVisible();
       note('Demo 1. Minh đăng sách thật qua biểu mẫu có ảnh đọc được, giá 65.000 đ; Lan bị chặn vào trang sửa; khách nhận 404 khi ẩn và tìm thấy sau khi hiện.');
     });
 
     await test('KT03', 'lọc kết hợp, kết quả rỗng, lỗi khoảng giá và hồ sơ rỗng', async (note) => {
       const target = await f.createListing({ title: 'Giải tích không có đánh giá KT03' }, f.an);
       await findBook(guest, goto, f, 'Giải tích không có đánh giá KT03');
-      await guest.locator('a[href="' + listingUrl(target) + '"]').click();
+      await marketCard(guest, target).click();
       await title(guest, target.title);
+      await link(guest, 'Về kết quả').click();
+      await expect(guest.getByLabel('Tìm món đồ')).toHaveValue(target.title);
+      await expect(guest).toHaveURL(/#results$/);
+      await link(guest, 'Bỏ bộ lọc Còn tốt').click();
+      await expect(guest.getByLabel('Tình trạng')).toHaveValue('');
+      await expect(guest.getByLabel('Trường', { exact: true })).toHaveValue(f.school.id);
+      await marketCard(guest, target).click();
       await guest.locator('a[href="/users/' + target.seller.id + '"]').click();
       await expect(guest.getByText('Chưa có đánh giá', { exact: true }).first()).toBeVisible();
       await findBook(guest, goto, f, target.title);
@@ -261,13 +269,27 @@ export async function browserCases(t, f, db, config, app, google) {
       await guest.getByLabel('Giá tối đa').fill('40000');
       await button(guest, 'Áp dụng bộ lọc').click();
       await expect(guest.getByRole('alert').first()).toContainText(/giá/i);
-      note('Kết hợp từ khóa, trường, KTX, tình trạng và giá trả đúng fixture; hồ sơ rỗng; khu vực lạ trả trạng thái rỗng và khoảng giá đảo chiều báo lỗi.');
+      await goto(guest, '/');
+      const quickFilters = guest.getByRole('navigation', { name: 'Lọc nhanh theo danh mục' });
+      await quickFilters.getByRole('link', { name: 'Giáo trình', exact: true }).click();
+      await expect(quickFilters.getByRole('link', { name: 'Giáo trình', exact: true })).toHaveAttribute('aria-current', 'true');
+      await expect(guest.getByLabel('Danh mục', { exact: true })).toHaveValue(target.categoryId);
+      await guest.getByRole('textbox', { name: 'Tìm món đồ' }).fill(target.title);
+      await button(guest, 'Tìm').click();
+      await expect(marketCard(guest, target)).toBeVisible();
+      await guest.getByLabel('Sắp xếp').selectOption('PRICE_ASC');
+      await expect(guest).toHaveURL(/[?&]sort=PRICE_ASC/);
+      await expect(quickFilters.getByRole('link', { name: 'Giáo trình', exact: true })).toHaveAttribute('aria-current', 'true');
+      await link(guest, 'Xóa bộ lọc').click();
+      await expect(guest).toHaveURL((url) => url.searchParams.get('q') === target.title
+        && url.searchParams.get('sort') === 'PRICE_ASC' && !url.searchParams.has('categoryId'));
+      note('Bộ lọc kết hợp, trạng thái rỗng và giá đảo chiều hoạt động. Lọc nhanh giữ danh mục khi tìm và sắp xếp. Về kết quả khôi phục truy vấn; bỏ một tiêu chí giữ các lọc khác.');
     });
 
     await test('KT04', 'demo bước 2, hội thoại nhận tin qua polling và từ chối An', async (note) => {
       await findBook(lan, goto, f);
-      await lan.locator('a[href="' + listingUrl(demoListing) + '"]').click();
-      await expect(lan).toHaveURL(new RegExp(listingUrl(demoListing) + '$'));
+      await marketCard(lan, demoListing).click();
+      await expect(lan).toHaveURL((url) => url.pathname === listingUrl(demoListing));
       await expect(lan.getByRole('heading', { name: book, level: 1 })).toBeVisible();
       const room = await openConversation(lan, goto, demoListing);
       await goto(minh, '/inbox/' + room.id);
@@ -619,6 +641,11 @@ async function browserSecondary({ test, f, db, app, goto, minh, lan, an, admin, 
       assert.ok(focused, 'Tab không tới được liên kết Về chợ ở ' + width + ' px');
       await page.keyboard.press('Enter');
       await title(page, 'Chợ đồ cũ sinh viên');
+      await expect(page.getByRole('navigation', { name: 'Lọc nhanh theo danh mục' })).toBeVisible();
+      await expect(page.locator('.hero-photo img')).toHaveJSProperty('complete', true);
+      assert.ok(await page.locator('.hero-photo img').evaluate((img) => img.naturalWidth > 0));
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Trang chợ tràn ngang ở ' + width + ' px');
+      await page.screenshot({ path: join(app.evidence, 'market-' + width + '.png'), fullPage: true });
     }
     note('Phản hồi HTTP HTML có <title> và giá. Context tắt JavaScript vẫn đọc đủ tên/giá. Context 360 px và 1366 px không tràn ngang, dùng Tab và Enter về chợ.');
   });
