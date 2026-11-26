@@ -38,6 +38,16 @@ sudo certbot --nginx -d uniswap.socodo.space --redirect
 
 Nếu cài Certbot trong `/opt/certbot`, dùng `sudo /opt/certbot/bin/certbot`. Đặt `APP_ORIGIN=https://uniswap.socodo.space` trong `.agent-run/local.env`, chạy `docker compose up -d --wait` và kiểm tra bằng `curl -fsS https://uniswap.socodo.space/api/v1/health`. Bật lịch tự gia hạn và thử bằng `certbot renew --dry-run` với đường dẫn Certbot tương ứng.
 
+### Cập nhật bản đang chạy trên EC2
+
+Sau khi cài Docker Compose, khởi tạo `.agent-run/local.env` và đặt `APP_ORIGIN` thành địa chỉ web đang dùng, chạy lệnh sau từ bản clone `main` sạch trên EC2.
+
+```bash
+bash scripts/deploy.sh
+```
+
+Script cập nhật từ `origin/main`, bật PostgreSQL và Mailpit, build image, áp dụng migration rồi chạy web và API. Khi Compose khởi động thành công, smoke test kiểm tra API health, trang chủ và route riêng tư qua địa chỉ `APP_ORIGIN`. Có thể chạy riêng bằng `bash scripts/smoke.sh https://uniswap.socodo.space`.
+
 ## Phát triển local
 
 ```bash
