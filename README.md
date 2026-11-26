@@ -48,8 +48,6 @@ bash scripts/deploy.sh
 
 Script cập nhật từ `origin/main`, bật PostgreSQL và Mailpit, build image, áp dụng migration rồi chạy web và API. Khi Compose khởi động thành công, smoke test kiểm tra API health, trang chủ và route riêng tư qua địa chỉ `APP_ORIGIN`. Có thể chạy riêng bằng `bash scripts/smoke.sh https://uniswap.socodo.space`.
 
-Để chạy deploy bằng nút **Run workflow**, xem [thiết lập GitHub Actions và AWS Systems Manager](docs/trien-khai-ec2-actions.md).
-
 ## Phát triển local
 
 ```bash
