@@ -62,3 +62,5 @@ sequenceDiagram
 Phiên dùng JWT trong cookie HttpOnly, SameSite=Lax, Secure khi chạy HTTPS. Route ghi kiểm tra Origin cho client web. JWT có thời hạn đề xuất 2 giờ, mang sessionId, guard đối chiếu phiên và trạng thái tài khoản để đăng xuất/khóa có tác dụng ngay. Hash mật khẩu bằng Argon2id, chỉ lưu hash token xác minh, giới hạn tần suất đăng nhập, gửi thư, nhắn tin và tải ảnh. Chỉ chủ tài khoản đọc được trường contact qua /me. Hai bên liên lạc qua chat. Ảnh QR chỉ trả cho chủ ảnh và người mua của lịch hẹn ACCEPTED hoặc COMPLETED gắn với ảnh đó. Loại secrets, mật khẩu, token và nội dung chat khỏi log vận hành.
 
 SEO, hiệu năng và bảo mật ở mục V được đánh giá qua ca KT11–KT12 trong [kịch bản nghiệm thu](nghiem-thu.md). Nhóm điền kết quả đo trên máy demo sau khi có ứng dụng.
+
+Các bước cấu hình bản công khai với Vercel, Neon và kho ảnh riêng tư nằm trong [hướng dẫn triển khai](trien-khai-vercel.md).

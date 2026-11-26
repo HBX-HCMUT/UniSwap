@@ -1,7 +1,8 @@
 import { argon2id, hash } from 'argon2';
 import { AssetPurpose, ListingCondition, PrismaClient, Role } from '@prisma/client';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { storeImage } from '../../src/modules/listings/asset-storage';
 
 const prisma = new PrismaClient();
 const demoPassword = 'UniSwapDemo123!';
@@ -33,19 +34,25 @@ function demoId(key: string) {
 }
 
 async function seed() {
-  const uploadDir = process.env.UPLOAD_DIR || resolve(__dirname, '../../uploads');
-  await mkdir(uploadDir, { recursive: true });
+  const databaseHost = new URL(process.env.DATABASE_URL || '').hostname;
+  const local = ['127.0.0.1', 'localhost', '[::1]'].includes(databaseHost);
+  const studentPassword = process.env.DEMO_STUDENT_PASSWORD || (local ? demoPassword : '');
+  const adminPassword = process.env.DEMO_ADMIN_PASSWORD || (local ? demoPassword : '');
+  if (!local && (
+    !process.env.BLOB_READ_WRITE_TOKEN || studentPassword.length < 16 || adminPassword.length < 16
+    || adminPassword === studentPassword || [studentPassword, adminPassword].includes(demoPassword)
+  )) throw Error('Seed cloud cần kho ảnh và hai mật khẩu riêng dài ít nhất 16 ký tự cho sinh viên và quản trị viên.');
+
   const images = await Promise.all(demoListings.map(async ({ assetKey, media }) => {
     const id = demoId(assetKey);
     const image = await readFile(resolve(__dirname, '../../demo-media', `${media}.webp`));
     const objectKey = `seeded-${id}.webp`;
-    await writeFile(resolve(uploadDir, objectKey), image, { flag: 'wx' }).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== 'EEXIST') throw error;
-    });
+    await storeImage(objectKey, image, 'image/webp', true);
     return { id, objectKey, bytes: image.length, mime: 'image/webp', purpose: AssetPurpose.LISTING, position: 0 };
   }));
 
-  const passwordHash = await hash(demoPassword, { type: argon2id });
+  const passwordHash = await hash(studentPassword, { type: argon2id });
+  const adminHash = studentPassword === adminPassword ? passwordHash : await hash(adminPassword, { type: argon2id });
   const now = new Date();
 
   await prisma.$transaction(async (tx) => {
@@ -72,7 +79,7 @@ async function seed() {
         create: {
           email,
           displayName,
-          passwordHash,
+          passwordHash: name === 'admin' ? adminHash : passwordHash,
           schoolId: schools[school].id,
           area: school === 0 ? 'KTX A' : 'KTX B',
           role: name === 'admin' ? Role.ADMIN : Role.STUDENT,
