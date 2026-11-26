@@ -11,13 +11,18 @@ fi
 curl_options=(--silent --show-error --connect-timeout 3 --max-time 10)
 
 curl "${curl_options[@]}" --fail --retry 8 --retry-connrefused --retry-delay 2 \
-  --url "$base_url/api/v1/health" |
+  --write-out '\n%{http_code}' --url "$base_url/api/v1/health" |
   python3 -c '
 import json
 import sys
 
+body, _, status = sys.stdin.read().rpartition("\n")
+if status != "200":
+    status = status or "không xác định"
+    sys.exit(f"API health trả HTTP {status}, cần HTTP 200.")
+
 try:
-    healthy = json.load(sys.stdin).get("ok") is True
+    healthy = json.loads(body).get("ok") is True
 except (ValueError, AttributeError):
     healthy = False
 

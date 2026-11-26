@@ -46,7 +46,7 @@ Sau khi cài Docker Compose, khởi tạo `.agent-run/local.env` và đặt `APP
 bash scripts/deploy.sh
 ```
 
-Script cập nhật từ `origin/main`, bật PostgreSQL và Mailpit, build image, áp dụng migration rồi chạy web và API. Khi Compose khởi động thành công, smoke test kiểm tra trang chủ, API health và route riêng tư qua địa chỉ `APP_ORIGIN`. Có thể chạy riêng bằng `bash scripts/smoke.sh https://uniswap.socodo.space`.
+Script cập nhật từ `origin/main`, bật PostgreSQL và Mailpit, build image, áp dụng migration rồi chạy web và API. Khi Compose khởi động thành công, smoke test kiểm tra API health, trang chủ và route riêng tư qua địa chỉ `APP_ORIGIN`. Có thể chạy riêng bằng `bash scripts/smoke.sh https://uniswap.socodo.space`.
 
 ## Phát triển local
 

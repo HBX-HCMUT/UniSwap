@@ -13,6 +13,7 @@ if [[ ! -f .agent-run/local.env ]]; then
   exit 1
 fi
 
+# Khóa mặc định trên Linux giữ file descriptor 8 và tự nhả khi tiến trình kết thúc.
 if ! portable_lock .agent-run/deploy.lock -n; then
   echo "Đang có một lượt deploy khác." >&2
   exit 1
@@ -32,7 +33,9 @@ if [[ "$local_commit" != "$remote_commit" ]]; then
   echo "Commit hiện tại chưa khớp với main trên origin." >&2
   exit 1
 fi
+printf 'Đang triển khai commit %s.\n' "$local_commit"
 
+# Compose nạp env_file và chuẩn hóa environment thành object trong JSON.
 app_origin="$(
   docker compose config --format json |
     python3 -c 'import json, sys; print(json.load(sys.stdin)["services"]["api"].get("environment", {}).get("APP_ORIGIN", ""))'
