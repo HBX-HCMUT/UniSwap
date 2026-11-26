@@ -1,0 +1,15 @@
+schemaVersion: '2.2'
+description: Triển khai UniSwap trên EC2 từ nhánh main.
+mainSteps:
+  - action: aws:runShellScript
+    name: deployUniSwap
+    precondition:
+      StringEquals:
+        - platformType
+        - Linux
+    inputs:
+      timeoutSeconds: '1800'
+      runCommand:
+        - |
+          set -eu
+          exec runuser -l ec2-user -c 'cd /home/ec2-user/UniSwap && exec bash scripts/deploy.sh'
