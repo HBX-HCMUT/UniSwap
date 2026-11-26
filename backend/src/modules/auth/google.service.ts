@@ -128,6 +128,9 @@ export async function googleFinish(
   }
   if (claims.nonce !== context.nonce)
     throw new BadRequestException("Mã xác nhận danh tính không khớp.");
+  console.info("GOOGLE_WORKSPACE_CHECK", {
+    hostedDomain: claims.hd ?? null,
+  });
   if (
     !claims.sub ||
     claims.email_verified !== true ||
