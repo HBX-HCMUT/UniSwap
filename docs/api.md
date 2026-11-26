@@ -5,6 +5,7 @@
 ## Quy ước chung
 
 - Request/response dùng JSON UTF-8, riêng POST /assets nhận multipart với file và purpose. Sau upload, frontend truyền ID ảnh do server cấp. Một tin có 1–6 ảnh đã tải xong và thuộc chủ tin.
+- Khi chạy trên Vercel, frontend xin vé qua POST /assets/upload-ticket cho ảnh lớn hơn 4 MiB. Trình duyệt dùng vé để tải thẳng vào kho riêng tư. POST /assets/upload-complete kiểm tra chủ vé và nội dung ảnh, rồi trả ID để gắn vào tin hoặc cuộc hẹn. MIME hợp lệ và giới hạn ảnh 5 MiB áp dụng cho cả hai cách tải.
 - Cookie uniswap_session nhận khi đăng nhập. Phía web gửi cookie cùng origin. API xác định userId từ phiên. PublicProfile không có email và contact. Admin không có quyền đọc chat của người dùng qua API quản trị.
 - Trang danh sách dùng page từ 1, pageSize mặc định 20, tối đa 100, kết quả gồm items, page, pageSize, total. Danh sách tin mặc định mới trước. Tin nhắn mới nhất ở trang 1, UI đảo thứ tự trong trang khi hiển thị hội thoại. Mốc demo dùng polling, tải lại trang đầu và hợp nhất theo id để không lặp.
 - Các endpoint nhận tài nguyên của chính mình kiểm tra quyền mỗi lần đọc hoặc ghi. Trả 404 khi truy cập dữ liệu riêng ngoài phạm vi nhìn thấy. Trả 403 khi người dùng thấy giao dịch nhưng dùng sai vai trò. Trạng thái đã thay đổi trả 409. Khi nhận 409, UI tải lại dữ liệu và chỉ hiện các thao tác còn hợp lệ.

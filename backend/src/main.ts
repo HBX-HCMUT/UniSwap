@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
-import type { Request, Response, NextFunction } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { AppModule } from "./app.module";
 import { Contract, Errors } from "./common/http";
 import { appOrigin, secret } from "./common/settings";
@@ -33,8 +33,22 @@ export async function createApp() {
 async function start() {
   const app = await createApp();
   await app.listen(
-    Number(process.env.API_PORT || 3001),
+    Number(process.env.API_PORT || process.env.PORT || 3001),
     process.env.API_HOST || "127.0.0.1",
   );
 }
-if (require.main === module) void start();
+let server: Promise<Express> | undefined;
+
+export default async function handleRequest(req: Request, res: Response) {
+  server ??= createApp().then(async (app) => {
+    await app.init();
+    return app.getHttpAdapter().getInstance() as Express;
+  }).catch((error: unknown) => {
+    server = undefined;
+    throw error;
+  });
+  const express = await server;
+  express(req, res);
+}
+
+if (require.main === module && process.env.VERCEL !== "1") void start();

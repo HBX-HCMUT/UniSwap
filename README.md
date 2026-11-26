@@ -40,7 +40,7 @@ export ACCEPTANCE_EVIDENCE_DIR="$PWD/.agent-run/evidence/local"
 bash agent/acceptance.sh && python3 agent/check.py evidence "$ACCEPTANCE_EVIDENCE_DIR"
 ```
 
-Bộ nghiệm thu: lint, typecheck, build, 51 thao tác HTTP theo OpenAPI, luồng trình duyệt Chromium, seed idempotent. Đạt **20/20 ca**. Cần Python 3; thiếu thư viện Chromium thì `npx playwright install --with-deps chromium`.
+Bộ nghiệm thu gồm lint, typecheck, build, 53 thao tác HTTP theo OpenAPI, luồng trình duyệt Chromium và kiểm tra seed lặp lại. Cần Python 3. Nếu thiếu thư viện Chromium, chạy `npx playwright install --with-deps chromium`.
 
 ## AI review pull request
 
@@ -54,6 +54,7 @@ Workflow [`.github/workflows/ai-review.yml`](.github/workflows/ai-review.yml) g�
 | Kiến trúc, ERD, dữ liệu | [Kiến trúc](docs/kien-truc.md) · [ERD](docs/du-lieu.md) · [Luồng UI](docs/design/ui.md) |
 | API | [docs/api.md](docs/api.md) · [openapi.yaml](docs/openapi.yaml) |
 | Nghiệm thu | [docs/nghiem-thu.md](docs/nghiem-thu.md) |
+| Triển khai cloud | [Vercel, Neon và kho ảnh](docs/trien-khai-vercel.md) |
 | Mã nguồn | [frontend/README.md](frontend/README.md) · [backend/README.md](backend/README.md) |
 
 Codex (tùy chọn) điều phối agent AI qua `agent/run.sh`; các bước chạy app/test độc lập với runner AI. Dừng dịch vụ: `Ctrl+C` (dev), `docker compose stop` (Docker), `bash agent/env.sh stop` (DB + Mailpit). Dữ liệu và ảnh giữ trong volume.
