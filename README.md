@@ -18,6 +18,26 @@ docker compose up -d --wait
 
 App: http://127.0.0.1:3000 · API health: http://127.0.0.1:3001/api/v1/health · Mailpit: http://127.0.0.1:58025. Mật khẩu mẫu: `UniSwapDemo123!` (`minh@`, `lan@`, `an@`, `admin@`, `chua-xac-minh@student.example.test`).
 
+## Triển khai demo trên EC2 với Nginx
+
+Trên EC2 mới dùng Amazon Linux, chạy Docker Compose theo mục trên. Trỏ bản ghi DNS `A` của `uniswap.socodo.space` về IPv4 public của EC2 và mở cổng `80`, `443` trong Security Group. Nếu dùng tên miền khác, thay tên miền trong mẫu và các lệnh bên dưới.
+
+```bash
+sudo dnf install -y nginx
+sudo install -m 0644 deploy/nginx/uniswap.conf /etc/nginx/conf.d/uniswap.conf
+sudo nginx -t && sudo systemctl enable --now nginx && sudo systemctl reload nginx
+```
+
+Mẫu HTTP chuyển yêu cầu tới Next.js trên `127.0.0.1:3000`. Trên máy đã có HTTPS, giữ cấu hình Certbot đang dùng để bảo toàn các dòng TLS.
+
+Sau khi DNS có hiệu lực, dùng Certbot với plugin Nginx để cấp chứng chỉ và chuyển hướng HTTP sang HTTPS.
+
+```bash
+sudo certbot --nginx -d uniswap.socodo.space --redirect
+```
+
+Nếu cài Certbot trong `/opt/certbot`, dùng `sudo /opt/certbot/bin/certbot`. Đặt `APP_ORIGIN=https://uniswap.socodo.space` trong `.agent-run/local.env`, chạy `docker compose up -d --wait` và kiểm tra bằng `curl -fsS https://uniswap.socodo.space/api/v1/health`. Bật lịch tự gia hạn và thử bằng `certbot renew --dry-run` với đường dẫn Certbot tương ứng.
+
 ## Phát triển local
 
 ```bash
