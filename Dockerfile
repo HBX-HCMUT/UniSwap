@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
 COPY package*.json ./
 COPY backend/package.json backend/package.json
 COPY frontend/package.json frontend/package.json
+COPY backend/prisma/schema.prisma backend/prisma/schema.prisma
 RUN npm ci --no-audit --no-fund && npm cache clean --force
 FROM dependencies AS application
 COPY --chown=node:node . .
