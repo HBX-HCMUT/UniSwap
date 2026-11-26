@@ -9,6 +9,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  reject-other-branch:
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Từ chối deploy ngoài main
+        shell: bash
+        run: |
+          echo "Hãy chọn nhánh main khi chạy workflow deploy." >&2
+          exit 1
+
   deploy:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -24,6 +34,7 @@ jobs:
       - name: Kiểm tra biến triển khai
         shell: bash
         run: |
+          set -euo pipefail
           : "${EC2_DEPLOY_REGION:?Cần đặt biến EC2_DEPLOY_REGION trong GitHub Actions.}"
           : "${EC2_DEPLOY_INSTANCE_ID:?Cần đặt biến EC2_DEPLOY_INSTANCE_ID trong GitHub Actions.}"
           : "${EC2_DEPLOY_ROLE_ARN:?Cần đặt biến EC2_DEPLOY_ROLE_ARN trong GitHub Actions.}"
@@ -48,7 +59,9 @@ jobs:
             --query 'Command.CommandId' \
             --output text)"
           printf 'SSM command ID %s\n' "$command_id"
+          printf 'SSM command ID `%s`\n' "$command_id" >> "$GITHUB_STEP_SUMMARY"
 
+          # 120 giây giao lệnh, 1800 giây chạy và 60 giây lấy kết quả.
           deadline=$((SECONDS + 1980))
           error_file="$RUNNER_TEMP/uniswap-ssm-error"
           while (( SECONDS < deadline )); do
@@ -74,5 +87,5 @@ jobs:
             fi
             sleep 10
           done
-          printf 'Hết thời gian chờ SSM. Xem command ID %s trong Run Command.\n' "$command_id" >&2
+          printf 'Hết thời gian chờ SSM. Lệnh có thể vẫn đang chạy. Kiểm tra command ID %s trong Run Command.\n' "$command_id" >&2
           exit 1

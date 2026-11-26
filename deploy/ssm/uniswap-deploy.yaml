@@ -12,4 +12,9 @@ mainSteps:
       runCommand:
         - |
           set -eu
-          exec runuser -l ec2-user -c 'cd /home/ec2-user/UniSwap && exec bash scripts/deploy.sh'
+          cd /home/ec2-user/UniSwap
+          if [ ! -f scripts/deploy.sh ]; then
+            echo "Thiếu /home/ec2-user/UniSwap/scripts/deploy.sh. Cập nhật bản clone trên EC2 từ main trước." >&2
+            exit 1
+          fi
+          exec runuser -u ec2-user -- /bin/bash scripts/deploy.sh
