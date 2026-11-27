@@ -74,18 +74,15 @@ Bộ nghiệm thu gồm lint, typecheck, build, 53 thao tác HTTP theo OpenAPI, 
 
 ## Đăng nhập Google
 
-Backend đã có sẵn luồng OAuth (PKCE + nonce + xác minh ID token qua JWKS); chỉ cần cấu hình:
+1. Vào **Google Auth Platform → Clients**, tạo OAuth client loại **Web application**. Thêm URI chính xác vào **Authorized redirect URIs**. Dùng `https://uniswap.socodo.space/api/v1/auth/google/callback` cho EC2 hoặc `http://127.0.0.1:3000/api/v1/auth/google/callback` khi chạy local ở cổng mặc định.
+2. Đặt `APP_ORIGIN` và `STUDENT_EMAIL_DOMAINS` trong `.agent-run/local.env` theo địa chỉ web và miền email sinh viên thực tế. Chạy lệnh dưới đây để nhập Client ID và Client Secret. Secret được nhập ẩn. Script lấy URI callback theo `APP_ORIGIN`.
 
-1. Google Cloud Console → tạo OAuth client (Web application), thêm redirect URI
-   `http://127.0.0.1:3000/api/v1/auth/google/callback` (thay cổng 3000 bằng cổng thật
-   bạn chạy — mặc định lấy theo `APP_ORIGIN`).
-2. Ghi credentials vào môi trường:
    ```bash
-   bash agent/google-oauth.sh <client-id> <client-secret>
+   bash agent/google-oauth.sh
    ```
-3. Khởi động lại API, rồi bấm **Tiếp tục với Google** ở trang đăng nhập.
 
-Chỉ email thuộc `STUDENT_EMAIL_DOMAINS` và đã xác minh bên Google mới đăng nhập được. Chưa cấu hình thì nút Google đưa về trang đăng nhập kèm thông báo, API vẫn trả `503` đúng hợp đồng OpenAPI.
+3. Nếu dùng Docker trên EC2, chạy `docker compose up -d --no-build` để tạo lại container với biến môi trường mới. Khi chạy local, khởi động lại API với biến môi trường cập nhật.
+4. Bấm **Tiếp tục với Google** ở trang đăng nhập. Dùng email được Google xác minh thuộc miền sinh viên đã cấu hình. Với email ngoài Gmail, tài khoản phải do Google Workspace quản lý.
 
 ## AI review pull request
 

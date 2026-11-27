@@ -72,7 +72,7 @@ export async function startGoogleFixture() {
           assert.equal(createHash('sha256').update(params.get('code_verifier')).digest('base64url'), claims.challenge);
           const payload = {
             iss: issuer, aud: clientId, sub: claims.sub, nonce: claims.nonce,
-            email: claims.email, email_verified: claims.verified, name: 'Hồ sơ thử OAuth',
+            email: claims.email, email_verified: claims.verified, hd: claims.hostedDomain ?? undefined, name: 'Hồ sơ thử OAuth',
             iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 300,
           };
           const unsigned = encode({ alg: 'RS256', kid, typ: 'JWT' }) + '.' + encode(payload);
@@ -102,8 +102,8 @@ export async function startGoogleFixture() {
   issuer = `http://127.0.0.1:${server.address().port}`;
   return {
     issuer,
-    use(email, verified = true) {
-      identity = { sub: randomUUID(), email, verified };
+    use(email, verified = true, hostedDomain = email.split("@")[1]) {
+      identity = { sub: randomUUID(), email, verified, hostedDomain };
     },
     close() {
       return new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));

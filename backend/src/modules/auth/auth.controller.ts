@@ -48,8 +48,8 @@ export class AuthController {
     return logout(req, res);
   }
   @Get("google")
-  start(@Req() req: Request, @Res() res: Response) {
-    return googleStart(req, res);
+  start(@Res() res: Response) {
+    return googleStart(res);
   }
   @Get("google/callback")
   finish(

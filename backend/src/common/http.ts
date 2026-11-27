@@ -52,10 +52,12 @@ export class Errors implements ExceptionFilter {
       );
     if (res.headersSent) return;
     const req = host.switchToHttp().getRequest<Request>();
-    if (req.path.startsWith("/api/v1/auth/google") && req.headers.accept?.includes("text/html")) {
-      const reason = status === 403 ? "Email Google chưa xác minh hoặc không thuộc miền trường." :
-        status === 503 ? "Đăng nhập Google hiện chưa khả dụng." : "Phiên đăng nhập Google không hợp lệ hoặc đã hết hạn.";
-      res.status(status).type("html").send('<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Đăng nhập UniSwap</title><main><h1>Đăng nhập UniSwap</h1><p>'+reason+'</p><a href="'+appOrigin+'/login">Quay lại đăng nhập</a></main></html>');
+    if (
+      (req.path === "/api/v1/auth/google" || req.path === "/api/v1/auth/google/callback") &&
+      req.headers.accept?.includes("text/html")
+    ) {
+      const reason = status === 403 ? "forbidden" : status === 503 ? "unavailable" : "error";
+      res.redirect(appOrigin + "/login?oauth=" + reason);
       return;
     }
     res

@@ -9,7 +9,7 @@ import { useMutation } from './mutation';
 const oauthReturn = 'uniswap-oauth-return';
 const oauthMessages: Record<string, string> = {
   error: 'Không thể đăng nhập bằng Google. Vui lòng thử lại hoặc dùng mật khẩu.',
-  forbidden: 'Email Google phải là email trường đã xác minh, hoặc tài khoản đang bị khóa.',
+  forbidden: 'Hãy dùng tài khoản Google của trường với email đã xác minh. Tài khoản bị khóa không thể đăng nhập.',
   unavailable: 'Đăng nhập Google chưa được cấu hình trên máy chủ này.',
 };
 

@@ -101,8 +101,8 @@ export async function standardCases(t, f, db, google, app, config, measurements)
     await newbie('/me', 401);
     note('Đăng ký sai miền 400, chưa xác minh 403, Mailpit có hai thư đúng người nhận, token mới chỉ dùng một lần, đăng nhập OK, PATCH hồ sơ, GET công khai bỏ email/liên hệ, logout thu hồi phiên');
 
-    async function oauth(emailAddress, verified, status) {
-      google.use(emailAddress, verified);
+    async function oauth(emailAddress, verified, status, hostedDomain) {
+      google.use(emailAddress, verified, hostedDomain);
       const api = f.newClient();
       const start = await api('/auth/google', 302);
       const authorize = new URL(start.headers.get('location'));
@@ -127,8 +127,15 @@ export async function standardCases(t, f, db, google, app, config, measurements)
     await oauth('google-valid' + authDomain, true, 302);
     await oauth('google-wrong@example.test', true, 403);
     await oauth('google-unverified' + authDomain, false, 403);
+    await oauth('google-unmanaged' + authDomain, true, 403, null);
     await anon('/auth/google/callback?code=unused&state=bad-state', 400);
-    note('OAuth giả lập có code, nonce/state, token RS256 và JWKS, đúng miền tạo phiên, sai miền hoặc email chưa xác minh 403, callback sai state 400. Google thật chưa chạy trong bộ local.');
+    const canceled = await fetch(app.apiOrigin + '/api/v1/auth/google/callback?error=access_denied', {
+      headers: { Accept: 'text/html' }, redirect: 'manual', signal: AbortSignal.timeout(3000),
+    });
+    await canceled.arrayBuffer();
+    assert.equal(canceled.status, 302);
+    assert.equal(canceled.headers.get('location'), app.webOrigin + '/login?oauth=error');
+    note('OAuth giả lập có code, nonce/state, token RS256 và JWKS, đúng miền tạo phiên, sai miền, chưa xác minh hoặc không do Google quản lý 403, callback sai state 400. Google thật chưa chạy trong bộ local.');
   });
 
   await t('KT02', 'API · đăng ảnh, giới hạn, quyền sửa và hiển thị', async (note) => {

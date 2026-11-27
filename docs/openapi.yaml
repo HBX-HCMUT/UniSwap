@@ -189,12 +189,14 @@ paths:
               schema:
                 type: string
               description: Đích chuyển hướng
+        "503":
+          $ref: '#/components/responses/Error503'
   /auth/google/callback:
     get:
       tags:
         - auth
       summary: Kiểm tra OAuth và đặt cookie phiên
-      description: Xác minh state, nonce và ID token. Cho phép các tham số bổ sung do Google trả về.
+      description: Xác minh state, nonce, ID token và quyền sở hữu email trường. Trình duyệt được đưa về trang đăng nhập khi OAuth thất bại. Cho phép các tham số bổ sung do Google trả về.
       operationId: getAuthGoogleCallback
       security: []
       x-access: public
@@ -221,6 +223,8 @@ paths:
           $ref: '#/components/responses/Error400'
         "403":
           $ref: '#/components/responses/Error403'
+        "503":
+          $ref: '#/components/responses/Error503'
   /auth/logout:
     post:
       tags:

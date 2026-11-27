@@ -37,7 +37,7 @@ flowchart LR
 
 | Mã và tính năng mục III | Điều kiện và thao tác chính | Kết quả quan sát được và ngoại lệ |
 |---|---|---|
-| UC01 · Tài khoản và hồ sơ | Khách nhập email đúng miền trường và mật khẩu, mở thư xác thực rồi đăng nhập. Có thể dùng Google với email trường đã xác thực. Sinh viên sửa tên, trường, KTX và liên hệ. | Chỉ phiên hợp lệ mới đăng tin. Link hết hạn có thể gửi lại. Google email ngoài miền bị từ chối. Hồ sơ công khai chỉ hiện tên, trường và uy tín. |
+| UC01 · Tài khoản và hồ sơ | Khách nhập email đúng miền trường và mật khẩu, mở thư xác thực rồi đăng nhập. Có thể dùng Google với email trường đã xác thực do Google quản lý. Sinh viên sửa tên, trường, KTX và liên hệ. | Chỉ phiên hợp lệ mới đăng tin. Link hết hạn có thể gửi lại. Google từ chối email ngoài miền cho phép hoặc email mà Google không quản lý. Hồ sơ công khai chỉ hiện tên, trường và uy tín. |
 | UC02 · Đăng và quản lý tin | Chủ tin tải 1–6 ảnh, điền tiêu đề, mô tả, giá VND, tình trạng, danh mục, trường và khu vực. Có thể sửa, ẩn, hiện lại hoặc đánh dấu đã bán trực tiếp. | Tin hợp lệ xuất hiện sau khi qua kiểm tra từ khóa. Tin chờ duyệt có trạng thái riêng trên “Tin của tôi”. Người khác sửa tin bị từ chối. |
 | UC03 · Tìm và lọc | Khách nhập từ khóa, chọn danh mục, trường, KTX/khu vực, khoảng giá và tình trạng. | Kết quả thỏa đồng thời các bộ lọc. Có phân trang, xóa lọc và trạng thái rỗng. Khoảng giá đảo chiều trả lỗi nhập liệu. |
 | UC04 · Chi tiết tin | Khách mở đường dẫn trực tiếp, xem ảnh, giá, tình trạng, địa điểm, uy tín và hồ sơ người bán. | Tin đang giữ/đã bán có nhãn và ngừng nhận yêu cầu mới. Tin ẩn/chờ duyệt/gỡ trả 404 với người ngoài. |
