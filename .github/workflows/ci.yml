@@ -2,7 +2,7 @@ name: Kiểm tra MVP
 on: [push, pull_request]
 jobs:
   acceptance:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
       postgres:

@@ -12,15 +12,18 @@ import { secret, appOrigin } from "../../common/settings";
 import { studentEmail } from "./account.service";
 
 const random = () => randomBytes(32).toString("base64url");
-function config() {
-  const clientId = process.env.GOOGLE_CLIENT_ID,
-    clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || process.env.GOOGLE_CALLBACK_URL;
-  if (!clientId || !clientSecret || !redirectUri)
-    throw new ServiceUnavailableException(
-      "Đăng nhập Google chưa được cấu hình.",
-    );
+
+// Mặc định redirect URI đi theo APP_ORIGIN để bản chạy ở cổng khác vẫn đúng.
+function credentials() {
+  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret)
+    throw new ServiceUnavailableException("Đăng nhập Google chưa được cấu hình.");
+  const redirectUri = (
+    process.env.GOOGLE_REDIRECT_URI ||
+    process.env.GOOGLE_CALLBACK_URL ||
+    appOrigin + "/api/v1/auth/google/callback"
+  ).trim();
   let issuer = "https://accounts.google.com";
   if (process.env.NODE_ENV === "test" && process.env.GOOGLE_OAUTH_ISSUER) {
     const fixture = new URL(process.env.GOOGLE_OAUTH_ISSUER);
@@ -45,7 +48,7 @@ async function discovery(issuer: string) {
 }
 const tempCookie = "uniswap_google";
 export async function googleStart(res: Response) {
-  const { issuer, clientId, redirectUri } = config();
+  const { issuer, clientId, redirectUri } = credentials();
   const meta = await discovery(issuer),
     state = random(),
     nonce = random(),
@@ -77,7 +80,7 @@ export async function googleFinish(
   code: string,
   state: string,
 ) {
-  const { issuer, clientId, clientSecret, redirectUri } = config();
+  const { issuer, clientId, clientSecret, redirectUri } = credentials();
   const signed = cookie(req, tempCookie);
   res.clearCookie(tempCookie, cookieOptions);
   let context;
@@ -143,6 +146,9 @@ export async function googleFinish(
   } catch {
     throw new ForbiddenException("Email Google phải thuộc miền sinh viên.");
   }
+  // Google chỉ xác nhận quyền sở hữu hiện tại cho Gmail và tài khoản Workspace.
+  if (!email.endsWith("@gmail.com") && (typeof claims.hd !== "string" || !claims.hd.trim()))
+    throw new ForbiddenException("Hãy dùng tài khoản Google Workspace của trường.");
   const sub = claims.sub,
     displayName = String(claims.name || email.split("@")[0]).slice(0, 100);
   const user = await db.$transaction(async (tx) => {

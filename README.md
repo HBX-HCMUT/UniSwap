@@ -72,6 +72,18 @@ bash agent/acceptance.sh && python3 agent/check.py evidence "$ACCEPTANCE_EVIDENC
 
 Bộ nghiệm thu gồm lint, typecheck, build, 53 thao tác HTTP theo OpenAPI, luồng trình duyệt Chromium và kiểm tra seed lặp lại. Cần Python 3. Nếu thiếu thư viện Chromium, chạy `npx playwright install --with-deps chromium`.
 
+## Đăng nhập Google
+
+1. Vào **Google Auth Platform → Clients**, tạo OAuth client loại **Web application**. Thêm URI chính xác vào **Authorized redirect URIs**. Dùng `https://uniswap.socodo.space/api/v1/auth/google/callback` cho EC2 hoặc `http://127.0.0.1:3000/api/v1/auth/google/callback` khi chạy local ở cổng mặc định.
+2. Đặt `APP_ORIGIN` và `STUDENT_EMAIL_DOMAINS` trong `.agent-run/local.env` theo địa chỉ web và miền email sinh viên thực tế. Chạy lệnh dưới đây để nhập Client ID và Client Secret. Secret được nhập ẩn. Script lấy URI callback theo `APP_ORIGIN`.
+
+   ```bash
+   bash agent/google-oauth.sh
+   ```
+
+3. Nếu dùng Docker trên EC2, chạy `docker compose up -d --no-build` để tạo lại container với biến môi trường mới. Khi chạy local, khởi động lại API với biến môi trường cập nhật.
+4. Bấm **Tiếp tục với Google** ở trang đăng nhập. Dùng email được Google xác minh thuộc miền sinh viên đã cấu hình. Với email ngoài Gmail, tài khoản phải do Google Workspace quản lý.
+
 ## AI review pull request
 
 Workflow [`.github/workflows/ai-review.yml`](.github/workflows/ai-review.yml) gọi DeepSeek khi PR mở/cập nhật và cập nhật một comment review (tiếng Việt theo template báo cáo). Cần secret `DEEPSEEK_API_KEY`; tuỳ chọn variable `DEEPSEEK_MODEL` (mặc định `deepseek-chat`) và `DEEPSEEK_BASE_URL`. Thiếu secret không làm đỏ PR. `ci.yml` vẫn là gate bắt buộc.
