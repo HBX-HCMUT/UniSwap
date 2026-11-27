@@ -437,7 +437,7 @@ paths:
       security:
         - sessionCookie: []
       x-access: student
-      description: Tối đa 5 MiB. Ảnh QR trả URL đọc có kiểm tra quyền. URL ảnh tin chỉ công khai khi tin được hiển thị.
+      description: Tối đa 5 MiB. Trên Vercel, ảnh lớn hơn 4 MiB dùng luồng /assets/upload-ticket và /assets/upload-complete. Ảnh QR trả URL đọc có kiểm tra quyền. URL ảnh tin chỉ công khai khi tin được hiển thị.
       requestBody:
         required: true
         content:
@@ -476,6 +476,89 @@ paths:
           $ref: '#/components/responses/Error415'
         "429":
           $ref: '#/components/responses/Error429'
+  /assets/upload-ticket:
+    post:
+      tags: [listings]
+      operationId: postAssetUploadTicket
+      summary: Cấp quyền tải một ảnh lên kho riêng tư
+      description: Dùng khi kho ảnh cloud được cấu hình. Vé gắn với chủ phiên, mục đích ảnh và một đường dẫn duy nhất, hết hạn sau 10 phút.
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purpose]
+              additionalProperties: false
+              properties:
+                purpose:
+                  type: string
+                  enum: [LISTING, PAYMENT_QR]
+      responses:
+        "201":
+          description: Quyền tải một ảnh JPEG, PNG hoặc WebP tối đa 5 MiB.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pathname, clientToken, ticket]
+                properties:
+                  pathname: { type: string }
+                  clientToken: { type: string }
+                  ticket: { type: string }
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "429":
+          $ref: '#/components/responses/Error429'
+        "503":
+          $ref: '#/components/responses/Error503'
+  /assets/upload-complete:
+    post:
+      tags: [listings]
+      operationId: postAssetUploadComplete
+      summary: Xác nhận nội dung ảnh đã tải và nhận ID
+      description: NestJS kiểm tra chủ vé và định dạng thực trước khi lưu metadata. Dùng lại vé hợp lệ trả cùng ảnh đã xác nhận.
+      security:
+        - sessionCookie: []
+      x-access: student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ticket]
+              additionalProperties: false
+              properties:
+                ticket: { type: string, minLength: 1, maxLength: 1024 }
+      responses:
+        "201":
+          description: Ảnh đã xác nhận.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        "400":
+          $ref: '#/components/responses/Error400'
+        "401":
+          $ref: '#/components/responses/Error401'
+        "403":
+          $ref: '#/components/responses/Error403'
+        "404":
+          $ref: '#/components/responses/Error404'
+        "413":
+          $ref: '#/components/responses/Error413'
+        "415":
+          $ref: '#/components/responses/Error415'
+        "503":
+          $ref: '#/components/responses/Error503'
   /assets/{id}:
     get:
       tags:

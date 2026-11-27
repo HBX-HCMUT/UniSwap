@@ -19,9 +19,20 @@ export function imageProblem(file: File) {
   return '';
 }
 
-export function uploadImage(file: File, purpose: Asset['purpose']) {
+export async function uploadImage(file: File, purpose: Asset['purpose']) {
   const problem = imageProblem(file);
   if (problem) throw new ApiError(400, problem);
+  if (process.env.NEXT_PUBLIC_ASSET_DIRECT_UPLOAD === '1' && file.size > 4 * 1024 * 1024) {
+    const { put } = await import('@vercel/blob/client');
+    const { pathname, clientToken, ticket } = await request<{
+      pathname: string;
+      clientToken: string;
+      ticket: string;
+    }>('/assets/upload-ticket', 'POST', { purpose });
+    await put(pathname, file, { access: 'private', token: clientToken, contentType: file.type })
+      .catch(() => { throw new ApiError(503, 'Chưa tải được ảnh. Vui lòng thử lại.'); });
+    return request<Asset>('/assets/upload-complete', 'POST', { ticket });
+  }
   const form = new FormData();
   form.set('file', file);
   form.set('purpose', purpose);

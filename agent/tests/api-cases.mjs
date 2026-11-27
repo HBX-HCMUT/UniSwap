@@ -132,6 +132,9 @@ export async function standardCases(t, f, db, google, app, config, measurements)
   });
 
   await t('KT02', 'API · đăng ảnh, giới hạn, quyền sửa và hiển thị', async (note) => {
+    await anon('/assets/upload-ticket', 401, post({ purpose: 'LISTING' }));
+    await minh.request('/assets/upload-ticket', 503, post({ purpose: 'LISTING' }));
+    await minh.request('/assets/upload-complete', 400, post({ ticket: 'invalid-ticket' }));
     const body = await f.listingBody();
     const listing = (await minh.request('/listings', 201, post(body))).data;
     assert.equal(listing.price, 65000);

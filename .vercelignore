@@ -1,0 +1,5 @@
+.agent-run/
+.claude/
+**/.env*
+**/uploads/
+docs/*.docx

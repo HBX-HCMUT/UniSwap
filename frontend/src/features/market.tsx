@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Icon } from '../components/icons';
 import { Field, Notice } from '../components/ui';
 import { conditionNames, type Category, type School } from '../lib/model';
-import { formData, getParam, href, value, type SearchParams } from '../lib/query';
+import { clearMarketFilters, formData, getParam, href, value, type SearchParams } from '../lib/query';
 import { Toggle } from './toggle';
 
 export function SearchBox({ query }: { query: SearchParams }) {
@@ -53,7 +53,7 @@ export function Filters({ query, schools, categories, followed }: { query: Searc
       <Field name="maxPrice" label="Giá tối đa"><input id="maxPrice" name="maxPrice" type="number" min={0} max={2000000000} step={1} defaultValue={getParam(query, 'maxPrice')} aria-describedby={error ? 'price-error' : undefined} /></Field>
       <div id="price-error"><Notice text={error} error /></div>
       <button type="submit">Áp dụng bộ lọc</button>
-      <Link href="/">Xóa bộ lọc</Link>
+      <Link href={clearMarketFilters(query)}>Xóa bộ lọc</Link>
     </form>
     {category && <div className="detail-body">
       {followed ? <Toggle key={category} endpoint={`/me/category-follows/${category}`} active={followed.includes(category)} add="Theo dõi danh mục" remove="Bỏ theo dõi danh mục" /> : <Link href={href('/login', { returnTo: href('/', { ...query, categoryId: category }) })}>Đăng nhập để theo dõi</Link>}
